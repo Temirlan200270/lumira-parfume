@@ -1,0 +1,14 @@
+# A config.toml is required for local Supabase CLI.
+# Apply the SQL in supabase/migrations to a hosted project if you are not running local Docker.
+
+project_id = "lumira-parfume"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15
+
+[auth]
+enabled = true
+enable_signup = false
