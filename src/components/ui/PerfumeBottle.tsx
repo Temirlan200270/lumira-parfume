@@ -9,7 +9,7 @@ interface PerfumeBottleProps {
 export default function PerfumeBottle({ color, accent, label }: PerfumeBottleProps) {
   const safeId = label.replace(/[^a-zA-Z0-9_-]/g, '_')
   return (
-    <svg viewBox="0 0 120 200" className="w-full h-full drop-shadow-lg">
+    <svg viewBox="0 0 120 200" className="w-full h-full drop-shadow-sm md:drop-shadow-lg">
       <defs>
         <linearGradient id={`grad-${safeId}`} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor={color} />

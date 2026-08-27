@@ -40,9 +40,9 @@ export default function ProductCard({ perfume, index = 0 }: ProductCardProps) {
       transition={cardTransition(index)}
       className="group"
     >
-      <div className="relative aspect-[3/4] bg-stone-100 mb-5 overflow-hidden">
+      <div className="relative aspect-[3/4] bg-stone-100 mb-2 md:mb-5 overflow-hidden">
         <div className="absolute inset-0 grain-sm" />
-        <div className="absolute inset-0 flex items-center justify-center p-8 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+        <div className="absolute inset-0 flex items-center justify-center p-3 md:p-8 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
           <PerfumeBottle
             color={perfume.bottleColor}
             accent={perfume.bottleAccent}
@@ -51,43 +51,43 @@ export default function ProductCard({ perfume, index = 0 }: ProductCardProps) {
         </div>
 
         {!inStock && (
-          <span className="absolute top-4 right-4 bg-white/90 px-2 py-1 text-[9px] tracking-[0.25em] text-stone-500 uppercase">
+          <span className="absolute top-2 right-2 md:top-4 md:right-4 bg-white/90 px-1.5 md:px-2 py-0.5 md:py-1 text-[8px] md:text-[9px] tracking-[0.2em] text-stone-500 uppercase">
             {AppStrings.product.outOfStock}
           </span>
         )}
 
         {inStock && perfume.section === 'raspiv' && (
-          <span className="absolute top-4 right-4 text-[9px] tracking-[0.25em] text-stone-500 uppercase">
+          <span className="absolute top-2 right-2 md:top-4 md:right-4 text-[8px] md:text-[9px] tracking-[0.2em] text-stone-500 uppercase">
             {AppStrings.product.original}
           </span>
         )}
 
         {perfume.isBestseller && (
-          <span className="absolute top-4 left-4 text-[9px] tracking-[0.25em] text-stone-400 uppercase">
+          <span className="absolute top-2 left-2 md:top-4 md:left-4 text-[8px] md:text-[9px] tracking-[0.2em] text-stone-400 uppercase">
             Хит
           </span>
         )}
         {perfume.isNew && perfume.section !== 'raspiv' && (
-          <span className="absolute top-4 left-4 text-[9px] tracking-[0.25em] text-stone-500 uppercase">
+          <span className="absolute top-2 left-2 md:top-4 md:left-4 text-[8px] md:text-[9px] tracking-[0.2em] text-stone-500 uppercase">
             Новинка
           </span>
         )}
 
-        <div className="absolute bottom-4 right-4 flex gap-2">
+        <div className="absolute bottom-2 right-2 md:bottom-4 md:right-4 flex gap-1 md:gap-2">
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               e.preventDefault()
               toggleFavorite(perfume.id)
             }}
-            className={`w-9 h-9 border flex items-center justify-center transition-all duration-300 ${
+            className={`w-7 h-7 md:w-9 md:h-9 border flex items-center justify-center transition-all duration-300 ${
               favorite
                 ? 'bg-accent border-accent text-white'
                 : 'bg-white/80 backdrop-blur-sm border-stone-200 text-stone-600 sm:opacity-0 sm:group-hover:opacity-100 hover:border-accent hover:text-accent'
             }`}
             title={favorite ? 'Убрать из избранного' : 'В избранное'}
           >
-            <Heart className={`w-3.5 h-3.5 ${favorite ? 'fill-current' : ''}`} />
+            <Heart className={`w-3 h-3 md:w-3.5 md:h-3.5 ${favorite ? 'fill-current' : ''}`} />
           </motion.button>
 
           <motion.button
@@ -106,32 +106,34 @@ export default function ProductCard({ perfume, index = 0 }: ProductCardProps) {
                 previewPricePerMl: perfume.pricePerMl,
               })
             }}
-            className="w-9 h-9 bg-white/80 backdrop-blur-sm border border-stone-200 flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
+            className="w-7 h-7 md:w-9 md:h-9 bg-white/80 backdrop-blur-sm border border-stone-200 flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
             title={inStock ? AppStrings.product.addToCart : AppStrings.product.outOfStock}
           >
-            <ShoppingBag className="w-3.5 h-3.5 text-stone-700" />
+            <ShoppingBag className="w-3 h-3 md:w-3.5 md:h-3.5 text-stone-700" />
           </motion.button>
         </div>
       </div>
 
-      <div className="space-y-2 px-0.5">
-        <div className="space-y-1">
-          <p className="text-[9px] tracking-[0.2em] text-stone-400 uppercase">{perfume.brand}</p>
-          <h3 className="text-base font-light text-stone-900 tracking-tight">
+      <div className="space-y-1 md:space-y-2 px-0.5">
+        <div className="space-y-0.5 md:space-y-1">
+          <p className="text-[8px] md:text-[9px] tracking-[0.16em] md:tracking-[0.2em] text-stone-400 uppercase truncate">
+            {perfume.brand}
+          </p>
+          <h3 className="text-sm md:text-base font-light text-stone-900 tracking-tight leading-tight line-clamp-2">
             {perfume.name}
           </h3>
         </div>
 
-        <p className="text-[10px] text-stone-400 font-light tracking-[0.2em] uppercase">
+        <p className="hidden sm:block text-[10px] text-stone-400 font-light tracking-[0.2em] uppercase">
           {perfume.tags.slice(0, 3).join(' • ')}
         </p>
 
-        <p className="text-sm text-stone-900 font-light tracking-wide text-center pt-1">
+        <p className="text-xs md:text-sm text-stone-900 font-light tracking-wide text-center pt-0.5 md:pt-1">
           {inStock ? formatTenge(totalPrice) : AppStrings.product.outOfStock}
         </p>
 
-        <div className="flex items-center justify-center gap-2 pt-1">
-          <span className="text-[10px] tracking-[0.2em] text-stone-400 uppercase">ml</span>
+        <div className="flex items-center justify-center gap-1 md:gap-2 pt-0.5 md:pt-1">
+          <span className="text-[9px] md:text-[10px] tracking-[0.2em] text-stone-400 uppercase">ml</span>
           {VOLUME_OPTIONS.map((ml) => {
             const selected = volume === ml
             return (
@@ -140,7 +142,7 @@ export default function ProductCard({ perfume, index = 0 }: ProductCardProps) {
                 type="button"
                 disabled={!inStock}
                 onClick={() => setVolume(ml)}
-                className={`w-8 h-8 text-[11px] font-light border transition-colors duration-200 disabled:opacity-40 disabled:pointer-events-none ${
+                className={`w-7 h-7 md:w-8 md:h-8 text-[10px] md:text-[11px] font-light border transition-colors duration-200 disabled:opacity-40 disabled:pointer-events-none ${
                   selected
                     ? 'border-stone-900 text-stone-900 bg-white'
                     : 'border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-700'
@@ -154,11 +156,11 @@ export default function ProductCard({ perfume, index = 0 }: ProductCardProps) {
           })}
         </div>
 
-        <p className="text-[10px] text-stone-400 font-light text-center">
+        <p className="text-[9px] md:text-[10px] text-stone-400 font-light text-center">
           {formatTenge(perfume.pricePerMl)} {AppStrings.product.perMl}
         </p>
 
-        <div className="flex items-center justify-center pt-1">
+        <div className="hidden sm:flex items-center justify-center pt-1">
           <div className="flex items-center gap-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <svg

@@ -7,6 +7,14 @@ import { Perfume, PerfumeSection, matchesPerfumeSearch } from '@/lib/data'
 import ProductCard from '@/components/ui/ProductCard'
 import WhatsAppButton from '@/components/ui/WhatsAppButton'
 import { blockTransition, revealViewport } from '@/lib/motion'
+import { AppStrings } from '@/lib/strings'
+
+const GENDER_OPTIONS: { id: Perfume['gender'] | 'all'; label: string }[] = [
+  { id: 'all', label: 'Все' },
+  { id: 'male', label: 'Мужской' },
+  { id: 'female', label: 'Женский' },
+  { id: 'unisex', label: 'Унисекс' },
+]
 
 interface CatalogProps {
   perfumes: Perfume[]
@@ -20,6 +28,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
   const [sortBy, setSortBy] = useState<string>('popular')
   const [query, setQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   useEffect(() => {
     const applyHashFilter = () => {
@@ -91,25 +100,42 @@ export default function Catalog({ perfumes }: CatalogProps) {
     { id: 'raspiv', label: 'Распив', hint: '100% оригинал' },
   ]
 
+  const renderSortSelect = () => (
+    <select
+      value={sortBy}
+      onChange={(e) => setSortBy(e.target.value)}
+      aria-label="Сортировка"
+      className="w-full px-2 py-2 bg-white border border-stone-200 text-stone-700 text-xs md:text-sm font-light focus:outline-none focus:border-stone-900"
+    >
+      <option value="popular">По популярности</option>
+      <option value="price-asc">Цена: по возрастанию</option>
+      <option value="price-desc">Цена: по убыванию</option>
+      <option value="name">По названию</option>
+      <option value="rating">По рейтингу</option>
+    </select>
+  )
+
   return (
-    <section id="catalog" className="pt-32 pb-24 bg-white">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="catalog" className="pt-16 pb-20 md:pt-32 md:pb-24 bg-white">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={revealViewport}
           transition={blockTransition}
-          className="text-center mb-8"
+          className="text-center mb-3 md:mb-8"
         >
-          <p className="text-xs tracking-[0.4em] text-stone-500 mb-4 uppercase">Каталог</p>
-          <h2 className="text-4xl md:text-5xl font-light text-stone-900">{title}</h2>
+          <p className="text-[10px] md:text-xs tracking-[0.3em] md:tracking-[0.4em] text-stone-500 mb-1 md:mb-4 uppercase">
+            Каталог
+          </p>
+          <h2 className="text-2xl md:text-5xl font-light text-stone-900">{title}</h2>
         </motion.div>
 
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-3 md:mb-6">
           <div
             role="tablist"
             aria-label="Раздел каталога"
-            className="inline-flex flex-wrap justify-center gap-2"
+            className="inline-flex w-full max-w-lg md:w-auto justify-stretch md:justify-center gap-1 md:gap-2"
           >
             {tabs.map((tab) => {
               const active = activeSection === tab.id
@@ -120,7 +146,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
                   role="tab"
                   aria-selected={active}
                   onClick={() => selectSection(tab.id)}
-                  className={`inline-flex items-center gap-2 h-10 px-4 text-[11px] tracking-[0.18em] uppercase font-light transition-colors ${
+                  className={`flex-1 md:flex-none inline-flex items-center justify-center gap-1 md:gap-2 h-8 md:h-10 px-2 md:px-4 text-[10px] md:text-[11px] tracking-[0.12em] md:tracking-[0.18em] uppercase font-light transition-colors ${
                     active
                       ? 'bg-black text-white border border-black'
                       : 'bg-transparent text-stone-500 border border-stone-300 hover:border-stone-900 hover:text-stone-900'
@@ -129,7 +155,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
                   {tab.label}
                   {tab.hint && (
                     <span
-                      className={`normal-case tracking-normal text-[9px] px-1.5 py-0.5 ${
+                      className={`hidden sm:inline normal-case tracking-normal text-[9px] px-1.5 py-0.5 ${
                         active ? 'bg-white/15 text-white' : 'bg-stone-100 text-stone-500'
                       }`}
                     >
@@ -142,25 +168,20 @@ export default function Catalog({ perfumes }: CatalogProps) {
           </div>
         </div>
 
-        <div className="min-h-[3rem] mb-6 flex items-start justify-center">
-          {activeSection === 'raspiv' && (
-            <p className="max-w-xl text-center text-sm text-stone-500 font-light leading-relaxed">
-              Распив — оригинальный парфюм из фирменного флакона, не копия и не аналог.
-            </p>
-          )}
-          {activeSection === 'razliv' && (
-            <p className="max-w-xl text-center text-sm text-stone-500 font-light leading-relaxed">
-              Разлив: 800 ₸ за 1 мл на все ароматы. Выберите объём 5, 10 или 20 мл на карточке.
-            </p>
-          )}
-        </div>
+        {activeSection !== 'all' && (
+          <p className="mb-3 md:mb-6 max-w-xl mx-auto text-center text-xs md:text-sm text-stone-500 font-light leading-relaxed">
+            {activeSection === 'raspiv'
+              ? 'Распив — оригинальный парфюм из фирменного флакона, не копия и не аналог.'
+              : 'Разлив: 800 ₸ за 1 мл на все ароматы. Выберите объём 5, 10 или 20 мл на карточке.'}
+          </p>
+        )}
 
-        <div className="flex justify-center mb-10">
+        <div className="hidden md:flex justify-center mb-10">
           <WhatsAppButton />
         </div>
 
-        <div className="relative max-w-2xl mx-auto mb-12">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+        <div className="relative max-w-2xl mx-auto mb-4 md:mb-12">
+          <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
           <input
             id="perfume-search"
             type="search"
@@ -170,7 +191,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
             onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
             placeholder="Поиск: название, бренд или нота"
             autoComplete="off"
-            className="w-full h-12 pl-11 pr-11 bg-stone-50 border border-stone-200 text-sm font-light text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 transition-colors"
+            className="w-full h-10 md:h-12 pl-10 md:pl-11 pr-10 md:pr-11 bg-stone-50 border border-stone-200 text-sm font-light text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 transition-colors"
           />
           {query && (
             <button
@@ -207,34 +228,66 @@ export default function Catalog({ perfumes }: CatalogProps) {
           )}
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+          <div className="lg:hidden flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-expanded={filtersOpen}
+              className="inline-flex items-center gap-1.5 h-9 px-3 border border-stone-300 text-[10px] tracking-[0.16em] uppercase text-stone-700"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              {AppStrings.catalog.filters}
+            </button>
+            <div className="flex-1 min-w-0">{renderSortSelect()}</div>
+          </div>
+
+          {filtersOpen && (
+            <div className="lg:hidden bg-stone-50 p-3 border border-stone-100">
+              <p className="text-[10px] tracking-[0.15em] text-stone-500 uppercase mb-2">Пол</p>
+              <div className="flex flex-wrap gap-1.5">
+                {GENDER_OPTIONS.map((gender) => (
+                  <button
+                    key={gender.id}
+                    type="button"
+                    onClick={() => setSelectedGender(gender.id)}
+                    className={`px-3 py-1.5 text-xs font-light transition-colors ${
+                      selectedGender === gender.id
+                        ? 'bg-stone-900 text-white'
+                        : 'bg-white text-stone-600 border border-stone-200'
+                    }`}
+                  >
+                    {gender.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, x: -12 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={revealViewport}
             transition={blockTransition}
-            className="lg:w-64 flex-shrink-0"
+            className="hidden lg:block lg:w-64 flex-shrink-0"
           >
             <div className="bg-stone-50 p-6 border border-stone-100 sticky top-24">
               <div className="flex items-center gap-2 mb-6">
                 <Filter className="w-4 h-4 text-stone-500" />
-                <span className="text-xs tracking-[0.2em] text-stone-700 uppercase">Фильтры</span>
+                <span className="text-xs tracking-[0.2em] text-stone-700 uppercase">
+                  {AppStrings.catalog.filters}
+                </span>
               </div>
 
               <div className="space-y-6">
                 <div>
                   <p className="text-xs tracking-[0.15em] text-stone-500 uppercase mb-3">Пол</p>
                   <div className="space-y-2">
-                    {[
-                      { id: 'all', label: 'Все' },
-                      { id: 'male', label: 'Мужской' },
-                      { id: 'female', label: 'Женский' },
-                      { id: 'unisex', label: 'Унисекс' },
-                    ].map((gender) => (
+                    {GENDER_OPTIONS.map((gender) => (
                       <button
                         key={gender.id}
                         type="button"
-                        onClick={() => setSelectedGender(gender.id as Perfume['gender'] | 'all')}
+                        onClick={() => setSelectedGender(gender.id)}
                         className={`w-full text-left px-3 py-2 text-sm transition-colors font-light ${
                           selectedGender === gender.id
                             ? 'bg-stone-900 text-white'
@@ -249,29 +302,20 @@ export default function Catalog({ perfumes }: CatalogProps) {
 
                 <div>
                   <p className="text-xs tracking-[0.15em] text-stone-500 uppercase mb-3">Сортировка</p>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-stone-200 text-stone-700 text-sm font-light focus:outline-none focus:border-stone-900"
-                  >
-                    <option value="popular">По популярности</option>
-                    <option value="price-asc">Цена: по возрастанию</option>
-                    <option value="price-desc">Цена: по убыванию</option>
-                    <option value="name">По названию</option>
-                    <option value="rating">По рейтингу</option>
-                  </select>
+                  {renderSortSelect()}
                 </div>
               </div>
             </div>
           </motion.div>
 
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-8">
-              <p className="text-sm text-stone-500 font-light">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-3 md:mb-8">
+              <p className="text-xs md:text-sm text-stone-500 font-light">
                 Показано <span className="text-stone-900">{filtered.length}</span> ароматов
               </p>
               {(activeSection !== 'all' || selectedGender !== 'all' || query) && (
                 <button
+                  type="button"
                   onClick={() => {
                     setActiveSection('all')
                     setSelectedGender('all')
@@ -287,7 +331,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
             </div>
 
             {filtered.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6 pb-12 md:pb-0">
                 {filtered.map((perfume, index) => (
                     <div key={perfume.id} id={`perfume-${perfume.id}`}>
                       <ProductCard perfume={perfume} index={index} />

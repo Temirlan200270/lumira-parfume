@@ -30,6 +30,10 @@ export const AppStrings = {
     original: 'Оригинал',
     perMl: '/ 1 мл',
   },
+  catalog: {
+    filters: 'Фильтры',
+    openWhatsApp: 'Написать в WhatsApp',
+  },
   admin: {
     title: 'Админка Lumira',
     login: 'Войти',

@@ -1,10 +1,12 @@
 'use client'
 
 import { WHATSAPP_LINK, WHATSAPP_PHONE } from '@/lib/data'
+import { AppStrings } from '@/lib/strings'
 
 interface WhatsAppButtonProps {
   className?: string
   compact?: boolean
+  iconOnly?: boolean
 }
 
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -16,7 +18,25 @@ function WhatsAppIcon({ className }: { className?: string }) {
   )
 }
 
-export default function WhatsAppButton({ className = '', compact = false }: WhatsAppButtonProps) {
+export default function WhatsAppButton({
+  className = '',
+  compact = false,
+  iconOnly = false,
+}: WhatsAppButtonProps) {
+  if (iconOnly) {
+    return (
+      <a
+        href={WHATSAPP_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`${AppStrings.catalog.openWhatsApp} ${WHATSAPP_PHONE}`}
+        className={`inline-flex h-12 w-12 items-center justify-center rounded-full border border-stone-900 bg-white text-stone-900 shadow-lg hover:bg-stone-900 hover:text-white transition-colors ${className}`}
+      >
+        <WhatsAppIcon className="w-5 h-5" />
+      </a>
+    )
+  }
+
   return (
     <a
       href={WHATSAPP_LINK}

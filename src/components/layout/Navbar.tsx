@@ -29,7 +29,7 @@ export default function Navbar() {
         background: scrolled ? 'rgba(255,255,255,0.15)' : 'transparent'
       }}
     >
-      <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-20 flex items-center justify-between">
         <a href="#" className="flex items-baseline gap-2 text-stone-900">
           <span className="font-serif text-2xl italic tracking-[0.08em]">lumira</span>
           <span className="text-stone-300 font-light" aria-hidden="true">—</span>

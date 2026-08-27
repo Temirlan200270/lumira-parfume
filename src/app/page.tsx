@@ -17,8 +17,9 @@ export default async function Home() {
       <Stories />
       <DiscoverySets />
       <Newsletter />
-      <div className="fixed bottom-6 left-6 z-50 max-w-[min(100%-5.5rem,22rem)]">
-        <WhatsAppButton compact className="shadow-lg bg-white/95 backdrop-blur-sm" />
+      <div className="fixed bottom-3 left-3 z-50 md:bottom-6 md:left-6">
+        <WhatsAppButton iconOnly className="md:hidden" />
+        <WhatsAppButton compact className="hidden md:inline-flex shadow-lg bg-white/95 backdrop-blur-sm" />
       </div>
       <AIConsultant />
     </main>

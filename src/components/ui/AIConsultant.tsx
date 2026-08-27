@@ -56,16 +56,17 @@ export default function AIConsultant() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-3 right-3 z-50 md:bottom-6 md:right-6">
       {!isOpen && (
         <motion.button
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           whileHover={{ scale: 1.1 }}
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 bg-stone-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors"
+          className="w-12 h-12 md:w-14 md:h-14 bg-stone-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-stone-800 transition-colors"
+          aria-label="Открыть консультанта"
         >
-          <MessageSquare className="w-6 h-6" />
+          <MessageSquare className="w-5 h-5 md:w-6 md:h-6" />
         </motion.button>
       )}
 
@@ -75,7 +76,7 @@ export default function AIConsultant() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="absolute bottom-0 right-0 w-[380px] max-h-[560px] bg-white border border-stone-200 shadow-2xl flex flex-col"
+            className="absolute bottom-0 right-0 w-[min(380px,calc(100vw-1.5rem))] max-h-[min(560px,70vh)] bg-white border border-stone-200 shadow-2xl flex flex-col"
           >
             <div className="p-4 border-b border-stone-100 flex items-center justify-between bg-stone-50">
               <div className="flex items-center gap-2">
