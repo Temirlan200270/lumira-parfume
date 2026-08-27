@@ -75,9 +75,9 @@ export default function Navbar() {
             href={WHATSAPP_LINK}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] tracking-[0.12em] text-stone-500 hover:text-stone-900 transition-colors font-light uppercase"
+            className="text-[10px] tracking-[0.08em] text-stone-500 hover:text-stone-900 transition-colors font-light"
           >
-            WhatsApp
+            {AppStrings.catalog.openWhatsApp}
           </a>
         </div>
 
@@ -155,7 +155,7 @@ export default function Navbar() {
                 className="text-sm tracking-[0.08em] text-stone-900 font-light"
                 onClick={() => setIsOpen(false)}
               >
-                Консультация WhatsApp
+                {AppStrings.catalog.openWhatsApp}
               </a>
             </div>
           </motion.div>

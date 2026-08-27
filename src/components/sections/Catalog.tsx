@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Filter, Search, X } from 'lucide-react'
 import { Perfume, PerfumeSection, matchesPerfumeSearch } from '@/lib/data'
 import ProductCard from '@/components/ui/ProductCard'
-import WhatsAppButton from '@/components/ui/WhatsAppButton'
 import { blockTransition, revealViewport } from '@/lib/motion'
 import { AppStrings } from '@/lib/strings'
 
@@ -15,6 +14,14 @@ const GENDER_OPTIONS: { id: Perfume['gender'] | 'all'; label: string }[] = [
   { id: 'female', label: 'Женский' },
   { id: 'unisex', label: 'Унисекс' },
 ]
+
+function aromaCountLabel(count: number): string {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod10 === 1 && mod100 !== 11) return `${count} аромат`
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} аромата`
+  return `${count} ароматов`
+}
 
 interface CatalogProps {
   perfumes: Perfume[]
@@ -116,117 +123,109 @@ export default function Catalog({ perfumes }: CatalogProps) {
   )
 
   return (
-    <section id="catalog" className="pt-16 pb-20 md:pt-32 md:pb-24 bg-white">
+    <section id="catalog" className="pt-16 pb-16 md:pt-28 md:pb-24 bg-white">
       <div className="max-w-7xl mx-auto px-3 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={revealViewport}
           transition={blockTransition}
-          className="text-center mb-3 md:mb-8"
+          className="mb-3 md:mb-5"
         >
-          <p className="text-[10px] md:text-xs tracking-[0.3em] md:tracking-[0.4em] text-stone-500 mb-1 md:mb-4 uppercase">
-            Каталог
-          </p>
-          <h2 className="text-2xl md:text-5xl font-light text-stone-900">{title}</h2>
+          <h2 className="text-2xl md:text-4xl font-light text-stone-900 mb-3 md:mb-4">{title}</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <div
+              role="tablist"
+              aria-label="Раздел каталога"
+              className="inline-flex w-full sm:w-auto shrink-0 justify-stretch sm:justify-start gap-1"
+            >
+              {tabs.map((tab) => {
+                const active = activeSection === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => selectSection(tab.id)}
+                    className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1 h-9 px-3 text-[10px] md:text-[11px] tracking-[0.12em] uppercase font-light transition-colors ${
+                      active
+                        ? 'bg-black text-white border border-black'
+                        : 'bg-transparent text-stone-500 border border-stone-300 hover:border-stone-900 hover:text-stone-900'
+                    }`}
+                  >
+                    {tab.label}
+                    {tab.hint && (
+                      <span
+                        className={`hidden md:inline normal-case tracking-normal text-[9px] px-1.5 py-0.5 ${
+                          active ? 'bg-white/15 text-white' : 'bg-stone-100 text-stone-500'
+                        }`}
+                      >
+                        {tab.hint}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+              <input
+                id="perfume-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
+                placeholder="Поиск: название, бренд или нота"
+                autoComplete="off"
+                className="w-full h-9 pl-10 pr-10 bg-stone-50 border border-stone-200 text-sm font-light text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 transition-colors"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-900"
+                  aria-label="Очистить поиск"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+              {searchFocused && query.trim() && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 bg-white border border-stone-200">
+                  {suggestions.map((perfume) => (
+                    <button
+                      key={perfume.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setQuery(`${perfume.brand} ${perfume.name}`)
+                        setSearchFocused(false)
+                        document.getElementById(`perfume-${perfume.id}`)?.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'center',
+                        })
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-stone-50 transition-colors border-b border-stone-100 last:border-b-0"
+                    >
+                      <p className="text-[10px] tracking-[0.2em] text-stone-400 uppercase">{perfume.brand}</p>
+                      <p className="text-sm font-light text-stone-900">{perfume.name}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </motion.div>
 
-        <div className="flex justify-center mb-3 md:mb-6">
-          <div
-            role="tablist"
-            aria-label="Раздел каталога"
-            className="inline-flex w-full max-w-lg md:w-auto justify-stretch md:justify-center gap-1 md:gap-2"
-          >
-            {tabs.map((tab) => {
-              const active = activeSection === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => selectSection(tab.id)}
-                  className={`flex-1 md:flex-none inline-flex items-center justify-center gap-1 md:gap-2 h-8 md:h-10 px-2 md:px-4 text-[10px] md:text-[11px] tracking-[0.12em] md:tracking-[0.18em] uppercase font-light transition-colors ${
-                    active
-                      ? 'bg-black text-white border border-black'
-                      : 'bg-transparent text-stone-500 border border-stone-300 hover:border-stone-900 hover:text-stone-900'
-                  }`}
-                >
-                  {tab.label}
-                  {tab.hint && (
-                    <span
-                      className={`hidden sm:inline normal-case tracking-normal text-[9px] px-1.5 py-0.5 ${
-                        active ? 'bg-white/15 text-white' : 'bg-stone-100 text-stone-500'
-                      }`}
-                    >
-                      {tab.hint}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
         {activeSection !== 'all' && (
-          <p className="mb-3 md:mb-6 max-w-xl mx-auto text-center text-xs md:text-sm text-stone-500 font-light leading-relaxed">
+          <p className="mb-3 max-w-xl text-xs md:text-sm text-stone-500 font-light leading-relaxed">
             {activeSection === 'raspiv'
               ? 'Распив — оригинальный парфюм из фирменного флакона, не копия и не аналог.'
               : 'Разлив: 800 ₸ за 1 мл на все ароматы. Выберите объём 5, 10 или 20 мл на карточке.'}
           </p>
         )}
-
-        <div className="hidden md:flex justify-center mb-10">
-          <WhatsAppButton />
-        </div>
-
-        <div className="relative max-w-2xl mx-auto mb-4 md:mb-12">
-          <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-          <input
-            id="perfume-search"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-            placeholder="Поиск: название, бренд или нота"
-            autoComplete="off"
-            className="w-full h-10 md:h-12 pl-10 md:pl-11 pr-10 md:pr-11 bg-stone-50 border border-stone-200 text-sm font-light text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 transition-colors"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-900"
-              aria-label="Очистить поиск"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-          {searchFocused && query.trim() && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 bg-white border border-stone-200">
-              {suggestions.map((perfume) => (
-                <button
-                  key={perfume.id}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    setQuery(`${perfume.brand} ${perfume.name}`)
-                    setSearchFocused(false)
-                    document.getElementById(`perfume-${perfume.id}`)?.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'center',
-                    })
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-stone-50 transition-colors border-b border-stone-100 last:border-b-0"
-                >
-                  <p className="text-[10px] tracking-[0.2em] text-stone-400 uppercase">{perfume.brand}</p>
-                  <p className="text-sm font-light text-stone-900">{perfume.name}</p>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           <div className="lg:hidden flex items-center gap-2">
@@ -309,9 +308,9 @@ export default function Catalog({ perfumes }: CatalogProps) {
           </motion.div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-3 md:mb-8">
+            <div className="flex items-center justify-between mb-3 md:mb-5">
               <p className="text-xs md:text-sm text-stone-500 font-light">
-                Показано <span className="text-stone-900">{filtered.length}</span> ароматов
+                {aromaCountLabel(filtered.length)}
               </p>
               {(activeSection !== 'all' || selectedGender !== 'all' || query) && (
                 <button

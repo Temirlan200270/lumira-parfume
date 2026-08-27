@@ -32,7 +32,7 @@ export const AppStrings = {
   },
   catalog: {
     filters: 'Фильтры',
-    openWhatsApp: 'Написать в WhatsApp',
+    openWhatsApp: 'Консультация в WhatsApp',
   },
   admin: {
     title: 'Админка Lumira',
