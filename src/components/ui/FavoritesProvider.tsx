@@ -20,8 +20,10 @@ interface FavoritesContextType {
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined)
 const EMPTY_IDS: string[] = []
-const FAVORITES_KEY = 'essence-favorites'
-const COMPARE_KEY = 'essence-compare'
+const FAVORITES_KEY = 'lumira-favorites'
+const LEGACY_FAVORITES_KEY = 'essence-favorites'
+const COMPARE_KEY = 'lumira-compare'
+const LEGACY_COMPARE_KEY = 'essence-compare'
 const STORAGE_EVENT = 'lumira-favorites-change'
 
 let favoritesCacheRaw: string | null | undefined
@@ -44,10 +46,24 @@ function parseIds(raw: string | null): string[] {
 function readIds(key: string): string[] {
   const raw = localStorage.getItem(key)
   if (key === FAVORITES_KEY) {
+    if (!raw) {
+      const legacy = localStorage.getItem(LEGACY_FAVORITES_KEY)
+      if (legacy) {
+        localStorage.setItem(FAVORITES_KEY, legacy)
+        return parseIds(legacy)
+      }
+    }
     if (raw === favoritesCacheRaw) return favoritesCache
     favoritesCacheRaw = raw
     favoritesCache = parseIds(raw)
     return favoritesCache
+  }
+  if (key === COMPARE_KEY && !raw) {
+    const legacy = localStorage.getItem(LEGACY_COMPARE_KEY)
+    if (legacy) {
+      localStorage.setItem(COMPARE_KEY, legacy)
+      return parseIds(legacy)
+    }
   }
   if (raw === compareCacheRaw) return compareCache
   compareCacheRaw = raw

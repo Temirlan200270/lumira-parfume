@@ -1,22 +1,24 @@
-import Catalog from "@/components/sections/Catalog";
-import Stories from "@/components/sections/Stories";
-import DiscoverySets from "@/components/sections/DiscoverySets";
-import Newsletter from "@/components/sections/Newsletter";
-import AIConsultant from "@/components/ui/AIConsultant";
-import { getCatalog } from "@/lib/catalog";
+import HomeHero from '@/components/sections/HomeHero'
+import HowItWorksStrip from '@/components/sections/HowItWorksStrip'
+import Hits from '@/components/sections/Hits'
+import FormatTiles from '@/components/sections/FormatTiles'
+import TrustRow from '@/components/sections/TrustRow'
+import Stories from '@/components/sections/Stories'
+import { getCatalog } from '@/lib/catalog'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  const perfumes = await getCatalog();
+  const perfumes = await getCatalog()
 
   return (
     <main className="flex-1">
-      <Catalog perfumes={perfumes} />
-      <Stories />
-      <DiscoverySets />
-      <Newsletter />
-      <AIConsultant />
+      <HomeHero />
+      <HowItWorksStrip />
+      <Hits perfumes={perfumes} />
+      <FormatTiles />
+      <TrustRow />
+      <Stories perfumes={perfumes} />
     </main>
-  );
+  )
 }

@@ -98,9 +98,14 @@ export function localCatalog(): Perfume[] {
   })
 }
 
-export async function getCatalog(): Promise<Perfume[]> {
+export interface CatalogResult {
+  perfumes: Perfume[]
+  error: boolean
+}
+
+export async function getCatalogResult(): Promise<CatalogResult> {
   if (!getPublicSupabaseEnv()) {
-    return localCatalog()
+    return { perfumes: localCatalog(), error: false }
   }
 
   try {
@@ -112,7 +117,7 @@ export async function getCatalog(): Promise<Perfume[]> {
 
     if (productsError || !products) {
       logger.error('catalog_products_failed', { message: productsError?.message ?? 'empty' })
-      return localCatalog()
+      return { perfumes: [], error: true }
     }
 
     const { data: offers, error: offersError } = await supabase
@@ -122,7 +127,7 @@ export async function getCatalog(): Promise<Perfume[]> {
 
     if (offersError || !offers) {
       logger.error('catalog_offers_failed', { message: offersError?.message ?? 'empty' })
-      return localCatalog()
+      return { perfumes: [], error: true }
     }
 
     const productMap = new Map((products as ProductRow[]).map((product) => [product.id, product]))
@@ -132,11 +137,29 @@ export async function getCatalog(): Promise<Perfume[]> {
       if (!product) continue
       cards.push(toPerfumeCard(product, offer))
     }
-    return cards
+    return { perfumes: cards, error: false }
   } catch (error) {
     logger.error('catalog_query_failed', {
       message: error instanceof Error ? error.message : 'unknown',
     })
-    return localCatalog()
+    return { perfumes: [], error: true }
   }
 }
+
+export async function getCatalog(): Promise<Perfume[]> {
+  const result = await getCatalogResult()
+  return result.perfumes
+}
+
+export async function getPerfumeBySlug(slug: string): Promise<Perfume | null> {
+  const catalog = await getCatalog()
+  return catalog.find((perfume) => perfume.slug === slug) ?? null
+}
+
+export function similarPerfumes(catalog: Perfume[], current: Perfume, limit = 4): Perfume[] {
+  const others = catalog.filter((perfume) => perfume.id !== current.id)
+  const sameSection = others.filter((perfume) => perfume.section === current.section)
+  const pool = sameSection.length >= limit ? sameSection : others
+  return pool.slice(0, limit)
+}
+

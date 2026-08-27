@@ -59,11 +59,12 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ ok: false, message }, { status })
 }
 
-function whatsappFromOrder(order: StoredOrder): string {
+function whatsappFromOrder(order: StoredOrder, city?: string): string {
   return buildWhatsAppUrl(
     buildWhatsAppText({
       orderNumber: order.order_number,
       customerName: order.customer_name,
+      city,
       items: order.items,
       totalTenge: order.total_tenge,
     })
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       orderNumber: order.order_number,
-      whatsappUrl: whatsappFromOrder(order),
+      whatsappUrl: whatsappFromOrder(order, payload.city),
     })
   }
 
@@ -203,7 +204,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: true,
         orderNumber: order.order_number,
-        whatsappUrl: whatsappFromOrder(order),
+        whatsappUrl: whatsappFromOrder(order, payload.city),
       })
     }
   }
@@ -220,6 +221,7 @@ export async function POST(request: Request) {
       orderNumber: order.order_number,
       customerName: payload.customerName,
       phoneE164: payload.phone,
+      city: payload.city,
       items: snapshots,
       totalTenge: calculated.value.totalTenge,
     })
@@ -245,10 +247,13 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     orderNumber: order.order_number,
-    whatsappUrl: whatsappFromOrder({
-      ...order,
-      items: snapshots,
-      total_tenge: calculated.value.totalTenge,
-    }),
+    whatsappUrl: whatsappFromOrder(
+      {
+        ...order,
+        items: snapshots,
+        total_tenge: calculated.value.totalTenge,
+      },
+      payload.city
+    ),
   })
 }

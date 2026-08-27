@@ -120,7 +120,7 @@ test('WhatsApp text includes order number, volumes and server total', () => {
   assert.match(text, /LM-ABCD1234/)
   assert.match(text, /Алия/)
   assert.match(text, /10 мл/)
-  assert.match(text, /8 000 тг/)
+  assert.match(text, /8 000 ₸/)
   const url = buildWhatsAppUrl(text)
   assert.match(url, /^https:\/\/wa\.me\/77479192766\?text=/)
 })

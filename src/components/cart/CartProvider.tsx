@@ -9,25 +9,30 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react'
-import { CART_STORAGE_KEY, MAX_CART_ITEMS, MAX_LINE_QUANTITY } from '@/lib/constants'
+import { CART_STORAGE_KEY, FIRST_ADD_SESSION_KEY, MAX_CART_ITEMS, MAX_LINE_QUANTITY } from '@/lib/constants'
 import { priceForVolume } from '@/lib/order'
+import { useToast } from '@/components/ui/Toast'
 import type { CartItem, VolumeMl } from '@/lib/types'
+
+interface AddItemResult {
+  added: boolean
+  limitReached: boolean
+}
 
 interface CartContextValue {
   items: CartItem[]
   isOpen: boolean
-  checkoutOpen: boolean
   clientRequestId: string
   itemCount: number
   previewTotal: number
   openCart: () => void
   closeCart: () => void
-  openCheckout: () => void
-  closeCheckout: () => void
-  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void
+  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => AddItemResult
   setQuantity: (offerId: string, volumeMl: VolumeMl, quantity: number) => void
+  setVolume: (offerId: string, fromMl: VolumeMl, toMl: VolumeMl) => void
   removeItem: (offerId: string, volumeMl: VolumeMl) => void
   clearCart: () => void
+  newRequestId: () => string
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined)
@@ -84,28 +89,51 @@ function sameLine(item: CartItem, offerId: string, volumeMl: VolumeMl): boolean 
   return item.offerId === offerId && item.volumeMl === volumeMl
 }
 
+function hasOpenedCartThisSession(): boolean {
+  try {
+    return sessionStorage.getItem(FIRST_ADD_SESSION_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function markCartOpenedThisSession(): void {
+  try {
+    sessionStorage.setItem(FIRST_ADD_SESSION_KEY, '1')
+  } catch {
+    /* ignore */
+  }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const items = useSyncExternalStore(subscribeCart, readStoredCart, () => EMPTY_CART)
   const [isOpen, setIsOpen] = useState(false)
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [clientRequestId, setClientRequestId] = useState('')
+  const { toast } = useToast()
 
-  const addItem = useCallback((incoming: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
+  const addItem = useCallback((incoming: Omit<CartItem, 'quantity'> & { quantity?: number }): AddItemResult => {
     const quantity = incoming.quantity ?? 1
     const current = readStoredCart()
     const existing = current.find((item) => sameLine(item, incoming.offerId, incoming.volumeMl))
+    if (!existing && current.length >= MAX_CART_ITEMS) {
+      toast('В корзине максимум 20 позиций')
+      return { added: false, limitReached: true }
+    }
     const next = existing
       ? current.map((item) =>
           sameLine(item, incoming.offerId, incoming.volumeMl)
             ? { ...item, quantity: Math.min(MAX_LINE_QUANTITY, item.quantity + quantity) }
             : item
         )
-      : current.length >= MAX_CART_ITEMS
-        ? current
-        : [...current, { ...incoming, quantity }]
+      : [...current, { ...incoming, quantity }]
     writeStoredCart(next)
-    setIsOpen(true)
-  }, [])
+    toast(`${incoming.name} · ${incoming.volumeMl} мл в корзине`)
+    if (!hasOpenedCartThisSession()) {
+      setIsOpen(true)
+      markCartOpenedThisSession()
+    }
+    return { added: true, limitReached: false }
+  }, [toast])
 
   const setQuantity = useCallback((offerId: string, volumeMl: VolumeMl, quantity: number) => {
     writeStoredCart(
@@ -114,6 +142,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
           ? { ...item, quantity: Math.min(MAX_LINE_QUANTITY, Math.max(1, quantity)) }
           : item
       )
+    )
+  }, [])
+
+  const setVolume = useCallback((offerId: string, fromMl: VolumeMl, toMl: VolumeMl) => {
+    if (fromMl === toMl) return
+    const current = readStoredCart()
+    const source = current.find((item) => sameLine(item, offerId, fromMl))
+    if (!source) return
+    const target = current.find((item) => sameLine(item, offerId, toMl))
+    if (target) {
+      const merged = Math.min(MAX_LINE_QUANTITY, target.quantity + source.quantity)
+      writeStoredCart(
+        current
+          .filter((item) => !sameLine(item, offerId, fromMl))
+          .map((item) => (sameLine(item, offerId, toMl) ? { ...item, quantity: merged } : item))
+      )
+      return
+    }
+    writeStoredCart(
+      current.map((item) => (sameLine(item, offerId, fromMl) ? { ...item, volumeMl: toMl } : item))
     )
   }, [])
 
@@ -142,31 +190,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () => ({
       items,
       isOpen,
-      checkoutOpen,
       clientRequestId,
       itemCount,
       previewTotal,
       openCart: () => setIsOpen(true),
       closeCart: () => setIsOpen(false),
-      openCheckout: () => {
-        setClientRequestId(crypto.randomUUID())
-        setCheckoutOpen(true)
-      },
-      closeCheckout: () => setCheckoutOpen(false),
       addItem,
       setQuantity,
+      setVolume,
       removeItem,
       clearCart,
+      newRequestId: () => {
+        const id = crypto.randomUUID()
+        setClientRequestId(id)
+        return id
+      },
     }),
     [
       items,
       isOpen,
-      checkoutOpen,
       clientRequestId,
       itemCount,
       previewTotal,
       addItem,
       setQuantity,
+      setVolume,
       removeItem,
       clearCart,
     ]

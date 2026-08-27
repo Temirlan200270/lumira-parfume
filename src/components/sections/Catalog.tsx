@@ -1,357 +1,481 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Filter, Search, X } from 'lucide-react'
-import { Perfume, PerfumeSection, matchesPerfumeSearch } from '@/lib/data'
+import type { Perfume } from '@/lib/data'
 import ProductCard from '@/components/ui/ProductCard'
-import { blockTransition, revealViewport } from '@/lib/motion'
+import { CATALOG_PAGE_SIZE, CATALOG_SEARCH_ID } from '@/lib/constants'
+import { aromaCountLabel, perfumeHref } from '@/lib/labels'
+import { POPULAR_QUERIES, rankPerfumes, searchSuggestions } from '@/lib/search'
 import { AppStrings } from '@/lib/strings'
+import { useFocusTrap } from '@/lib/use-focus-trap'
 
-const GENDER_OPTIONS: { id: Perfume['gender'] | 'all'; label: string }[] = [
-  { id: 'all', label: 'Все' },
-  { id: 'male', label: 'Мужской' },
-  { id: 'female', label: 'Женский' },
-  { id: 'unisex', label: 'Унисекс' },
+const GENDER_OPTIONS: { id: 'all' | Perfume['gender']; label: string }[] = [
+  { id: 'all', label: AppStrings.gender.all },
+  { id: 'male', label: AppStrings.gender.male },
+  { id: 'female', label: AppStrings.gender.female },
+  { id: 'unisex', label: AppStrings.gender.unisex },
 ]
 
-function aromaCountLabel(count: number): string {
-  const mod10 = count % 10
-  const mod100 = count % 100
-  if (mod10 === 1 && mod100 !== 11) return `${count} аромат`
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} аромата`
-  return `${count} ароматов`
-}
+type SectionFilter = 'all' | 'razliv' | 'raspiv'
+type SortKey = 'popular' | 'price-asc' | 'price-desc' | 'name'
+type StockFilter = 'all' | 'in' | 'out'
 
 interface CatalogProps {
   perfumes: Perfume[]
 }
 
-type SectionFilter = 'all' | PerfumeSection
+function asSection(value: string | null): SectionFilter {
+  if (value === 'razliv' || value === 'raspiv') return value
+  return 'all'
+}
 
 export default function Catalog({ perfumes }: CatalogProps) {
-  const [activeSection, setActiveSection] = useState<SectionFilter>('all')
-  const [selectedGender, setSelectedGender] = useState<Perfume['gender'] | 'all'>('all')
-  const [sortBy, setSortBy] = useState<string>('popular')
-  const [query, setQuery] = useState('')
-  const [searchFocused, setSearchFocused] = useState(false)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [searchFocused, setSearchFocused] = useState(false)
+  const filterSheetRef = useRef<HTMLDivElement>(null)
+  const closeFilters = useCallback(() => setFiltersOpen(false), [])
+  useFocusTrap(filtersOpen, filterSheetRef, closeFilters)
 
-  useEffect(() => {
-    const applyHashFilter = () => {
-      const hash = window.location.hash
-      if (hash === '#catalog-razliv' || hash === '#catalog-raspiv') {
-        setActiveSection(hash.replace('#catalog-', '') as PerfumeSection)
-      } else if (hash === '#catalog-all' || hash === '#catalog') {
-        setActiveSection('all')
-      }
+  const activeSection = asSection(searchParams.get('format'))
+  const query = searchParams.get('q') ?? ''
+  const selectedGender = (searchParams.get('gender') as Perfume['gender'] | 'all' | null) ?? 'all'
+  const selectedBrand = searchParams.get('brand') ?? ''
+  const stock = (searchParams.get('stock') as StockFilter | null) ?? 'all'
+  const sortBy = (searchParams.get('sort') as SortKey | null) ?? 'popular'
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
+  const minPrice = searchParams.get('min') ?? ''
+  const maxPrice = searchParams.get('max') ?? ''
+
+  const setParams = (patch: Record<string, string | null>) => {
+    const next = new URLSearchParams(searchParams.toString())
+    for (const [key, value] of Object.entries(patch)) {
+      if (!value) next.delete(key)
+      else next.set(key, value)
     }
+    if (!('page' in patch)) next.delete('page')
+    const qs = next.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }
 
-    applyHashFilter()
-    window.addEventListener('hashchange', applyHashFilter)
-    return () => window.removeEventListener('hashchange', applyHashFilter)
-  }, [])
+  const brands = useMemo(() => {
+    return [...new Set(perfumes.map((perfume) => perfume.brand))].sort((a, b) => a.localeCompare(b, 'ru'))
+  }, [perfumes])
 
   const filtered = useMemo(() => {
     let result = [...perfumes]
-
     if (activeSection !== 'all') {
-      result = result.filter((p) => p.section === activeSection)
+      result = result.filter((perfume) => perfume.section === activeSection)
     }
-
     if (selectedGender !== 'all') {
-      result = result.filter((p) => p.gender === selectedGender)
+      result = result.filter((perfume) => perfume.gender === selectedGender)
     }
-
-    result = result.filter((p) => matchesPerfumeSearch(p, query))
-
-    switch (sortBy) {
-      case 'price-asc':
-        result.sort((a, b) => a.pricePerMl - b.pricePerMl)
-        break
-      case 'price-desc':
-        result.sort((a, b) => b.pricePerMl - a.pricePerMl)
-        break
-      case 'name':
-        result.sort((a, b) => a.name.localeCompare(b.name, 'ru'))
-        break
-      case 'rating':
-        result.sort((a, b) => b.ratings.compliments - a.ratings.compliments)
-        break
-      default:
-        result.sort((a, b) => (b.isBestseller ? 1 : 0) - (a.isBestseller ? 1 : 0))
-        break
+    if (selectedBrand) {
+      result = result.filter((perfume) => perfume.brand === selectedBrand)
     }
-
+    if (stock === 'in') {
+      result = result.filter((perfume) => perfume.isInStock !== false)
+    }
+    if (stock === 'out') {
+      result = result.filter((perfume) => perfume.isInStock === false)
+    }
+    const min = Number(minPrice)
+    const max = Number(maxPrice)
+    if (Number.isFinite(min) && minPrice) {
+      result = result.filter((perfume) => perfume.pricePerMl * 5 >= min)
+    }
+    if (Number.isFinite(max) && maxPrice) {
+      result = result.filter((perfume) => perfume.pricePerMl * 5 <= max)
+    }
+    if (query.trim().length >= 2) {
+      result = rankPerfumes(result, query)
+    } else if (query.trim().length === 1) {
+      result = []
+    } else {
+      switch (sortBy) {
+        case 'price-asc':
+          result.sort((a, b) => a.pricePerMl - b.pricePerMl)
+          break
+        case 'price-desc':
+          result.sort((a, b) => b.pricePerMl - a.pricePerMl)
+          break
+        case 'name':
+          result.sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+          break
+        default:
+          result.sort((a, b) => Number(b.isBestseller) - Number(a.isBestseller))
+      }
+    }
     return result
-  }, [perfumes, activeSection, selectedGender, sortBy, query])
+  }, [
+    perfumes,
+    activeSection,
+    selectedGender,
+    selectedBrand,
+    stock,
+    minPrice,
+    maxPrice,
+    query,
+    sortBy,
+  ])
 
-  const suggestions = useMemo(() => filtered.slice(0, 6), [filtered])
+  const suggestions = useMemo(
+    () => (query.trim().length >= 2 ? searchSuggestions(perfumes, query) : []),
+    [perfumes, query]
+  )
 
-  const selectSection = (section: SectionFilter) => {
-    setActiveSection(section)
-    const hash = section === 'all' ? '#catalog' : `#catalog-${section}`
-    window.history.replaceState(null, '', hash)
-  }
+  const pageCount = Math.max(1, Math.ceil(filtered.length / CATALOG_PAGE_SIZE))
+  const needsPagination = filtered.length > CATALOG_PAGE_SIZE
+  const pageItems = needsPagination
+    ? filtered.slice((page - 1) * CATALOG_PAGE_SIZE, page * CATALOG_PAGE_SIZE)
+    : filtered
 
   const title =
     activeSection === 'raspiv'
-      ? 'Распив'
+      ? AppStrings.catalog.raspiv
       : activeSection === 'razliv'
-        ? 'Разлив'
-        : 'Все ароматы'
+        ? AppStrings.catalog.razliv
+        : AppStrings.catalog.all
+
+  const lead =
+    activeSection === 'raspiv'
+      ? AppStrings.catalog.leadRaspiv
+      : activeSection === 'razliv'
+        ? AppStrings.catalog.leadRazliv
+        : AppStrings.catalog.leadAll
 
   const tabs: { id: SectionFilter; label: string; hint?: string }[] = [
     { id: 'all', label: 'Все' },
-    { id: 'razliv', label: 'Разлив' },
-    { id: 'raspiv', label: 'Распив', hint: '100% оригинал' },
+    { id: 'razliv', label: AppStrings.catalog.razliv },
+    { id: 'raspiv', label: AppStrings.catalog.raspiv, hint: AppStrings.catalog.originalChip },
   ]
 
-  const renderSortSelect = () => (
-    <select
-      value={sortBy}
-      onChange={(e) => setSortBy(e.target.value)}
-      aria-label="Сортировка"
-      className="w-full px-2 py-2 bg-white border border-stone-200 text-stone-700 text-xs md:text-sm font-light focus:outline-none focus:border-stone-900"
-    >
-      <option value="popular">По популярности</option>
-      <option value="price-asc">Цена: по возрастанию</option>
-      <option value="price-desc">Цена: по убыванию</option>
-      <option value="name">По названию</option>
-      <option value="rating">По рейтингу</option>
-    </select>
+  const reset = () => {
+    router.replace('/catalog', { scroll: false })
+  }
+
+  const filters = (
+    <div className="space-y-6">
+      <fieldset>
+        <legend className="mb-3 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+          {AppStrings.catalog.gender}
+        </legend>
+        <div className="space-y-1">
+          {GENDER_OPTIONS.map((gender) => (
+            <button
+              key={gender.id}
+              type="button"
+              onClick={() => setParams({ gender: gender.id === 'all' ? null : gender.id })}
+              className={`flex h-11 w-full items-center px-3 text-left text-sm ${
+                selectedGender === gender.id ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100'
+              }`}
+            >
+              {gender.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="mb-3 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+          {AppStrings.catalog.brand}
+        </legend>
+        <select
+          aria-label={AppStrings.catalog.brand}
+          value={selectedBrand}
+          onChange={(event) => setParams({ brand: event.target.value || null })}
+          className="h-11 w-full rounded-[2px] border border-stone-200 bg-background px-3 text-sm"
+        >
+          <option value="">Все бренды</option>
+          {brands.map((brand) => (
+            <option key={brand} value={brand}>
+              {brand}
+            </option>
+          ))}
+        </select>
+      </fieldset>
+
+      <fieldset>
+        <legend className="mb-3 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+          {AppStrings.catalog.price}
+        </legend>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder="от"
+            value={minPrice}
+            onChange={(event) => setParams({ min: event.target.value || null })}
+            className="h-11 rounded-[2px] border border-stone-200 px-3 text-sm"
+          />
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder="до"
+            value={maxPrice}
+            onChange={(event) => setParams({ max: event.target.value || null })}
+            className="h-11 rounded-[2px] border border-stone-200 px-3 text-sm"
+          />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="mb-3 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+          {AppStrings.catalog.stock}
+        </legend>
+        {(['all', 'in', 'out'] as const).map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setParams({ stock: item === 'all' ? null : item })}
+            className={`flex h-11 w-full items-center px-3 text-left text-sm ${
+              stock === item ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100'
+            }`}
+          >
+            {item === 'all'
+              ? AppStrings.catalog.stockAll
+              : item === 'in'
+                ? AppStrings.catalog.stockIn
+                : AppStrings.catalog.stockOut}
+          </button>
+        ))}
+      </fieldset>
+
+      <button type="button" onClick={reset} className="text-sm text-muted hover:text-stone-900">
+        {AppStrings.catalog.reset}
+      </button>
+    </div>
   )
 
   return (
-    <section id="catalog" className="pt-16 pb-16 md:pt-28 md:pb-24 bg-white">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={revealViewport}
-          transition={blockTransition}
-          className="mb-3 md:mb-5"
+    <section className="section-y bg-background">
+      <div className="container-lumira">
+        <h1 className="mb-3 text-[32px] font-light leading-10 text-stone-900 md:text-[40px]">{title}</h1>
+
+        <div
+          role="tablist"
+          aria-label="Раздел каталога"
+          className="mb-3 flex gap-1 overflow-x-auto"
         >
-          <h2 className="text-2xl md:text-4xl font-light text-stone-900 mb-3 md:mb-4">{title}</h2>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <div
-              role="tablist"
-              aria-label="Раздел каталога"
-              className="inline-flex w-full sm:w-auto shrink-0 justify-stretch sm:justify-start gap-1"
-            >
-              {tabs.map((tab) => {
-                const active = activeSection === tab.id
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    onClick={() => selectSection(tab.id)}
-                    className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1 h-9 px-3 text-[10px] md:text-[11px] tracking-[0.12em] uppercase font-light transition-colors ${
-                      active
-                        ? 'bg-black text-white border border-black'
-                        : 'bg-transparent text-stone-500 border border-stone-300 hover:border-stone-900 hover:text-stone-900'
-                    }`}
-                  >
-                    {tab.label}
-                    {tab.hint && (
-                      <span
-                        className={`hidden md:inline normal-case tracking-normal text-[9px] px-1.5 py-0.5 ${
-                          active ? 'bg-white/15 text-white' : 'bg-stone-100 text-stone-500'
-                        }`}
-                      >
-                        {tab.hint}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+          {tabs.map((tab) => {
+            const active = activeSection === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setParams({ format: tab.id === 'all' ? null : tab.id })}
+                className={`inline-flex h-11 shrink-0 items-center gap-2 px-4 text-sm ${
+                  active
+                    ? 'bg-stone-900 text-white'
+                    : 'border border-stone-200 text-muted hover:border-stone-900 hover:text-stone-900'
+                }`}
+              >
+                {tab.label}
+                {tab.hint ? (
+                  <span className={`text-xs normal-case tracking-normal ${active ? 'text-white/80' : 'text-muted'}`}>
+                    {tab.hint}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
 
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-              <input
-                id="perfume-search"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
-                placeholder="Поиск: название, бренд или нота"
-                autoComplete="off"
-                className="w-full h-9 pl-10 pr-10 bg-stone-50 border border-stone-200 text-sm font-light text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-stone-900 transition-colors"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-900"
-                  aria-label="Очистить поиск"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-              {searchFocused && query.trim() && suggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 bg-white border border-stone-200">
-                  {suggestions.map((perfume) => (
-                    <button
-                      key={perfume.id}
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => {
-                        setQuery(`${perfume.brand} ${perfume.name}`)
-                        setSearchFocused(false)
-                        document.getElementById(`perfume-${perfume.id}`)?.scrollIntoView({
-                          behavior: 'smooth',
-                          block: 'center',
-                        })
-                      }}
-                      className="w-full text-left px-4 py-3 hover:bg-stone-50 transition-colors border-b border-stone-100 last:border-b-0"
-                    >
-                      <p className="text-[10px] tracking-[0.2em] text-stone-400 uppercase">{perfume.brand}</p>
-                      <p className="text-sm font-light text-stone-900">{perfume.name}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
+        <p className="mb-4 text-sm leading-[22px] text-muted">{lead}</p>
 
-        {activeSection !== 'all' && (
-          <p className="mb-3 max-w-xl text-xs md:text-sm text-stone-500 font-light leading-relaxed">
-            {activeSection === 'raspiv'
-              ? 'Распив — оригинальный парфюм из фирменного флакона, не копия и не аналог.'
-              : 'Разлив: 800 ₸ за 1 мл на все ароматы. Выберите объём 5, 10 или 20 мл на карточке.'}
-          </p>
-        )}
-
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-          <div className="lg:hidden flex items-center gap-2">
+        <form
+          className="relative mb-6"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setParams({ q: query.trim() || null })
+          }}
+        >
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <label htmlFor={CATALOG_SEARCH_ID} className="sr-only">
+            {AppStrings.catalog.searchLabel}
+          </label>
+          <input
+            id={CATALOG_SEARCH_ID}
+            type="text"
+            value={query}
+            onChange={(event) => setParams({ q: event.target.value || null })}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => window.setTimeout(() => setSearchFocused(false), 150)}
+            placeholder={AppStrings.catalog.searchPlaceholder}
+            autoComplete="off"
+            className="h-11 w-full border border-stone-200 bg-background pl-10 pr-12 text-base text-stone-900 placeholder:text-muted md:text-sm"
+          />
+          {query ? (
             <button
               type="button"
-              onClick={() => setFiltersOpen((open) => !open)}
-              aria-expanded={filtersOpen}
-              className="inline-flex items-center gap-1.5 h-9 px-3 border border-stone-300 text-[10px] tracking-[0.16em] uppercase text-stone-700"
+              onClick={() => setParams({ q: null })}
+              className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-muted hover:text-stone-900"
+              aria-label={AppStrings.catalog.searchClear}
             >
-              <Filter className="w-3.5 h-3.5" />
-              {AppStrings.catalog.filters}
+              <X className="h-4 w-4" />
             </button>
-            <div className="flex-1 min-w-0">{renderSortSelect()}</div>
-          </div>
-
-          {filtersOpen && (
-            <div className="lg:hidden bg-stone-50 p-3 border border-stone-100">
-              <p className="text-[10px] tracking-[0.15em] text-stone-500 uppercase mb-2">Пол</p>
-              <div className="flex flex-wrap gap-1.5">
-                {GENDER_OPTIONS.map((gender) => (
+          ) : null}
+          {searchFocused && query.trim().length >= 2 && suggestions.length > 0 ? (
+            <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 border border-stone-200 bg-background">
+              {suggestions.map((perfume) => (
+                <button
+                  key={perfume.id}
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => router.push(perfumeHref(perfume.slug))}
+                  className="w-full border-b border-stone-100 px-4 py-3 text-left last:border-b-0 hover:bg-stone-50"
+                >
+                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">{perfume.brand}</p>
+                  <p className="text-sm text-stone-900">{perfume.name}</p>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {searchFocused && !query.trim() ? (
+            <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 border border-stone-200 bg-background p-4">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+                {AppStrings.catalog.popular}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {POPULAR_QUERIES.map((item) => (
                   <button
-                    key={gender.id}
+                    key={item}
                     type="button"
-                    onClick={() => setSelectedGender(gender.id)}
-                    className={`px-3 py-1.5 text-xs font-light transition-colors ${
-                      selectedGender === gender.id
-                        ? 'bg-stone-900 text-white'
-                        : 'bg-white text-stone-600 border border-stone-200'
-                    }`}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setParams({ q: item })}
+                    className="h-11 border border-stone-200 px-3 text-sm"
                   >
-                    {gender.label}
+                    {item}
                   </button>
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
+        </form>
 
-          <motion.div
-            initial={{ opacity: 0, x: -12 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={revealViewport}
-            transition={blockTransition}
-            className="hidden lg:block lg:w-64 flex-shrink-0"
-          >
-            <div className="bg-stone-50 p-6 border border-stone-100 sticky top-24">
-              <div className="flex items-center gap-2 mb-6">
-                <Filter className="w-4 h-4 text-stone-500" />
-                <span className="text-xs tracking-[0.2em] text-stone-700 uppercase">
-                  {AppStrings.catalog.filters}
-                </span>
-              </div>
+        <div className="flex flex-col gap-8 lg:flex-row">
+          <div className="lg:hidden">
+            <div className="mb-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen(true)}
+                className="inline-flex h-11 items-center gap-2 border border-stone-200 px-4 text-sm"
+              >
+                <Filter className="h-4 w-4" />
+                {AppStrings.catalog.filters}
+              </button>
+              <select
+                value={sortBy}
+                onChange={(event) => setParams({ sort: event.target.value === 'popular' ? null : event.target.value })}
+                aria-label={AppStrings.catalog.sort}
+                className="h-11 flex-1 rounded-[2px] border border-stone-200 bg-background px-3 text-sm"
+              >
+                <option value="popular">{AppStrings.catalog.sortPopular}</option>
+                <option value="price-asc">{AppStrings.catalog.sortPriceAsc}</option>
+                <option value="price-desc">{AppStrings.catalog.sortPriceDesc}</option>
+                <option value="name">{AppStrings.catalog.sortName}</option>
+              </select>
+            </div>
+          </div>
 
-              <div className="space-y-6">
-                <div>
-                  <p className="text-xs tracking-[0.15em] text-stone-500 uppercase mb-3">Пол</p>
-                  <div className="space-y-2">
-                    {GENDER_OPTIONS.map((gender) => (
-                      <button
-                        key={gender.id}
-                        type="button"
-                        onClick={() => setSelectedGender(gender.id)}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors font-light ${
-                          selectedGender === gender.id
-                            ? 'bg-stone-900 text-white'
-                            : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-                        }`}
-                      >
-                        {gender.label}
-                      </button>
-                    ))}
-                  </div>
+          {filtersOpen ? (
+            <div className="fixed inset-0 z-[70] lg:hidden">
+              <button
+                type="button"
+                className="absolute inset-0 bg-stone-950/40"
+                aria-label="Закрыть фильтры"
+                onClick={closeFilters}
+              />
+              <div
+                ref={filterSheetRef}
+                className="absolute inset-x-0 bottom-0 max-h-[90vh] overflow-y-auto bg-background p-4 pb-[calc(16px+env(safe-area-inset-bottom))]"
+                role="dialog"
+                aria-modal="true"
+                aria-label={AppStrings.catalog.filters}
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <p className="text-sm font-medium">{AppStrings.catalog.filters}</p>
+                  <button
+                    type="button"
+                    className="flex h-11 w-11 items-center justify-center"
+                    onClick={closeFilters}
+                    aria-label="Закрыть"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-
-                <div>
-                  <p className="text-xs tracking-[0.15em] text-stone-500 uppercase mb-3">Сортировка</p>
-                  {renderSortSelect()}
-                </div>
+                {filters}
               </div>
             </div>
-          </motion.div>
+          ) : null}
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-3 md:mb-5">
-              <p className="text-xs md:text-sm text-stone-500 font-light">
-                {aromaCountLabel(filtered.length)}
+          <aside className="hidden w-64 shrink-0 lg:block">
+            <div className="sticky top-24 space-y-6">
+              <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">
+                {AppStrings.catalog.filters}
               </p>
-              {(activeSection !== 'all' || selectedGender !== 'all' || query) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveSection('all')
-                    setSelectedGender('all')
-                    setQuery('')
-                    window.history.replaceState(null, '', '#catalog')
-                  }}
-                  className="text-xs tracking-wider text-stone-500 hover:text-stone-900 flex items-center gap-1 transition-colors"
+              {filters}
+              <div>
+                <p className="mb-3 text-xs font-medium uppercase tracking-[0.12em] text-muted">
+                  {AppStrings.catalog.sort}
+                </p>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setParams({ sort: event.target.value === 'popular' ? null : event.target.value })}
+                  aria-label={AppStrings.catalog.sort}
+                  className="h-11 w-full rounded-[2px] border border-stone-200 bg-background px-3 text-sm"
                 >
-                  <X className="w-3 h-3" />
-                  Сбросить
-                </button>
-              )}
+                  <option value="popular">{AppStrings.catalog.sortPopular}</option>
+                  <option value="price-asc">{AppStrings.catalog.sortPriceAsc}</option>
+                  <option value="price-desc">{AppStrings.catalog.sortPriceDesc}</option>
+                  <option value="name">{AppStrings.catalog.sortName}</option>
+                </select>
+              </div>
+            </div>
+          </aside>
+
+          <div className="min-w-0 flex-1">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm text-muted">{aromaCountLabel(filtered.length)}</p>
             </div>
 
             {filtered.length > 0 ? (
-              <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6 pb-12 md:pb-0">
-                {filtered.map((perfume, index) => (
-                    <div key={perfume.id} id={`perfume-${perfume.id}`}>
-                      <ProductCard perfume={perfume} index={index} />
-                    </div>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+                  {pageItems.map((perfume) => (
+                    <ProductCard key={perfume.id} perfume={perfume} />
+                  ))}
+                </div>
+                {needsPagination ? (
+                  <div className="mt-8 flex flex-wrap gap-2">
+                    {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => (
+                      <button
+                        key={number}
+                        type="button"
+                        onClick={() => setParams({ page: number === 1 ? null : String(number) })}
+                        className={`h-11 min-w-11 px-3 text-sm ${
+                          page === number ? 'bg-stone-900 text-white' : 'border border-stone-200'
+                        }`}
+                      >
+                        {number}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </>
             ) : (
-              <div className="text-center py-20">
-                <p className="text-stone-400 font-light">
-                  {query ? `По запросу «${query}» ничего не найдено` : 'Ничего не найдено'}
+              <div className="py-20 text-center">
+                <p className="text-muted">
+                  {query ? `По запросу «${query}» ничего не найдено` : AppStrings.catalog.empty}
                 </p>
-                <button
-                  onClick={() => {
-                    setActiveSection('all')
-                    setSelectedGender('all')
-                    setQuery('')
-                    window.history.replaceState(null, '', '#catalog')
-                  }}
-                  className="mt-4 text-xs tracking-[0.2em] border-b border-stone-300 pb-1 hover:border-stone-900 transition-colors"
-                >
-                  Сбросить фильтры
+                <button type="button" onClick={reset} className="mt-4 text-sm text-stone-900 underline">
+                  {AppStrings.catalog.reset}
                 </button>
               </div>
             )}

@@ -1,72 +1,66 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ShoppingBag, Search } from 'lucide-react'
-import { categories, WHATSAPP_LINK } from '@/lib/data'
+import Link from 'next/link'
+import { Heart, Search, ShoppingBag } from 'lucide-react'
 import { useCart } from '@/components/cart/CartProvider'
+import { useSearchUi } from '@/components/layout/SearchProvider'
+import Logo from '@/components/ui/Logo'
+import { WHATSAPP_LINK } from '@/lib/constants'
 import { AppStrings } from '@/lib/strings'
 
-export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [scrolled, setScrolled] = useState(false)
-  const { itemCount, openCart } = useCart()
+const desktopLinks = [
+  { href: '/catalog', label: AppStrings.nav.catalog },
+  { href: '/catalog?format=razliv', label: AppStrings.nav.razliv },
+  { href: '/catalog?format=raspiv', label: AppStrings.nav.raspiv },
+  { href: '/how-it-works', label: AppStrings.nav.how },
+]
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+export default function Navbar() {
+  const { itemCount, openCart } = useCart()
+  const { requestSearch } = useSearchUi()
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? 'backdrop-blur-xl' : ''
-      }`}
-      style={{
-        background: scrolled ? 'rgba(255,255,255,0.15)' : 'transparent'
-      }}
-    >
-      <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-20 flex items-center justify-between">
-        <a href="#" className="flex items-baseline gap-2 text-stone-900">
-          <span className="font-serif text-2xl italic tracking-[0.08em]">lumira</span>
-          <span className="text-stone-300 font-light" aria-hidden="true">—</span>
-          <span className="text-[9px] font-light tracking-[0.35em] uppercase">parfume</span>
-        </a>
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-stone-200 bg-background md:h-16">
+      <div className="container-lumira flex h-full items-center justify-between gap-4">
+        <Logo />
 
-        <div className="hidden md:flex items-center gap-12">
-          <a
-            href="#catalog"
-            className="text-[10px] tracking-[0.25em] text-stone-500 hover:text-stone-900 transition-colors font-light uppercase"
-          >
-            Каталог
-          </a>
-        </div>
+        <nav className="hidden items-center gap-8 lg:flex" aria-label="Основное меню">
+          {desktopLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="text-[13px] font-normal text-stone-900 hover:text-muted"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
-        <div className="hidden md:flex items-center gap-8">
+        <div className="flex items-center gap-1 md:gap-2">
           <button
             type="button"
-            onClick={() => {
-              const input = document.getElementById('perfume-search')
-              input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              window.setTimeout(() => input?.focus(), 350)
-            }}
-            className="text-stone-500 hover:text-stone-900 transition-colors"
-            aria-label="Поиск парфюма"
+            onClick={requestSearch}
+            className="flex h-11 w-11 items-center justify-center text-stone-900"
+            aria-label={AppStrings.nav.search}
           >
-            <Search className="w-4 h-4" />
+            <Search className="h-4 w-4" />
           </button>
+          <Link
+            href="/favorites"
+            className="hidden h-11 w-11 items-center justify-center text-stone-900 lg:flex"
+            aria-label={AppStrings.nav.favorites}
+          >
+            <Heart className="h-4 w-4" />
+          </Link>
           <button
             type="button"
             onClick={openCart}
-            className="relative text-stone-500 hover:text-stone-900 transition-colors"
+            className="relative flex h-11 w-11 items-center justify-center text-stone-900"
             aria-label={AppStrings.cart.open}
           >
-            <ShoppingBag className="w-4 h-4" />
+            <ShoppingBag className="h-4 w-4" />
             {itemCount > 0 && (
-              <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 bg-stone-900 text-white text-[9px] leading-4 text-center">
+              <span className="absolute top-1.5 right-1.5 min-w-4 bg-stone-900 px-1 text-center text-[11px] leading-4 text-white tabular-nums">
                 {itemCount}
               </span>
             )}
@@ -75,92 +69,12 @@ export default function Navbar() {
             href={WHATSAPP_LINK}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] tracking-[0.08em] text-stone-500 hover:text-stone-900 transition-colors font-light"
+            className="hidden px-2 text-sm font-normal text-stone-900 hover:text-muted lg:inline"
           >
-            {AppStrings.catalog.openWhatsApp}
+            {AppStrings.nav.whatsapp}
           </a>
         </div>
-
-        <div className="flex items-center gap-4 md:hidden">
-          <button
-            type="button"
-            onClick={openCart}
-            className="relative text-stone-900"
-            aria-label={AppStrings.cart.open}
-          >
-            <ShoppingBag className="w-5 h-5" />
-            {itemCount > 0 && (
-              <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 bg-stone-900 text-white text-[9px] leading-4 text-center">
-                {itemCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="text-stone-900"
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
       </div>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white/95 backdrop-blur-xl border-t border-stone-100"
-          >
-            <div className="px-6 py-8 flex flex-col gap-6">
-              {categories.map((cat) => (
-                <a
-                  key={cat.id}
-                  href={`#catalog-${cat.id}`}
-                  className="text-lg tracking-[0.15em] text-stone-600 hover:text-stone-900 transition-colors font-light uppercase"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {cat.name}
-                </a>
-              ))}
-              <button
-                type="button"
-                className="text-left text-lg tracking-[0.15em] text-stone-600 hover:text-stone-900 transition-colors font-light uppercase"
-                onClick={() => {
-                  setIsOpen(false)
-                  window.setTimeout(() => {
-                    const input = document.getElementById('perfume-search')
-                    input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    input?.focus()
-                  }, 200)
-                }}
-              >
-                Поиск
-              </button>
-              <button
-                type="button"
-                className="text-left text-lg tracking-[0.15em] text-stone-600 hover:text-stone-900 transition-colors font-light uppercase"
-                onClick={() => {
-                  setIsOpen(false)
-                  openCart()
-                }}
-              >
-                {AppStrings.cart.title}
-                {itemCount > 0 ? ` (${itemCount})` : ''}
-              </button>
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm tracking-[0.08em] text-stone-900 font-light"
-                onClick={() => setIsOpen(false)}
-              >
-                {AppStrings.catalog.openWhatsApp}
-              </a>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+    </header>
   )
 }

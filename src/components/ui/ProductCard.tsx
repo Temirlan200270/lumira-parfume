@@ -1,20 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { Heart, ShoppingBag } from 'lucide-react'
 import {
-  Perfume,
-  VOLUME_OPTIONS,
   DEFAULT_VOLUME_ML,
-  VolumeMl,
+  type Perfume,
+  type VolumeMl,
   formatTenge,
   priceForVolume,
 } from '@/lib/data'
-import PerfumeBottle from '@/components/ui/PerfumeBottle'
+import ProductPhoto from '@/components/ui/ProductPhoto'
+import Badge from '@/components/ui/Badge'
+import VolumeSelector from '@/components/ui/VolumeSelector'
 import { useFavorites } from '@/components/ui/FavoritesProvider'
 import { useCart } from '@/components/cart/CartProvider'
-import { cardTransition, revealViewport } from '@/lib/motion'
+import { perfumeHref, sectionLabel } from '@/lib/labels'
 import { AppStrings } from '@/lib/strings'
 
 interface ProductCardProps {
@@ -22,8 +23,7 @@ interface ProductCardProps {
   index?: number
 }
 
-export default function ProductCard({ perfume, index = 0 }: ProductCardProps) {
-  const starRating = Math.round(perfume.ratings.compliments / 2)
+export default function ProductCard({ perfume }: ProductCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites()
   const { addItem } = useCart()
   const favorite = isFavorite(perfume.id)
@@ -31,70 +31,57 @@ export default function ProductCard({ perfume, index = 0 }: ProductCardProps) {
   const inStock = perfume.isInStock !== false
   const totalPrice = priceForVolume(perfume.pricePerMl, volume)
   const offerId = perfume.offerId ?? perfume.id
+  const href = perfumeHref(perfume.slug)
+
+  const statusBadge = !inStock
+    ? { tone: 'oos' as const, label: AppStrings.product.outOfStock }
+    : perfume.isBestseller
+      ? { tone: 'hit' as const, label: AppStrings.product.hit }
+      : perfume.isNew
+        ? { tone: 'new' as const, label: AppStrings.product.isNew }
+        : null
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={revealViewport}
-      transition={cardTransition(index)}
-      className="group"
-    >
-      <div className="relative aspect-[3/4] bg-stone-100 mb-2 md:mb-5 overflow-hidden">
-        <div className="absolute inset-0 grain-sm" />
-        <div className="absolute inset-0 flex items-center justify-center p-3 md:p-8 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
-          <PerfumeBottle
-            color={perfume.bottleColor}
-            accent={perfume.bottleAccent}
-            label={perfume.name}
-          />
+    <article className="group">
+      <div className="relative aspect-[3/4] overflow-hidden bg-paper">
+        <Link href={href} className="absolute inset-0 block cursor-pointer">
+          <div className="h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.02]">
+            <ProductPhoto
+              src={perfume.image}
+              alt={`${perfume.brand} ${perfume.name}, флакон`}
+              name={perfume.name}
+              faded={!inStock}
+            />
+          </div>
+        </Link>
+
+        {statusBadge ? (
+          <div className="absolute top-3 left-3 z-10">
+            <Badge tone={statusBadge.tone}>{statusBadge.label}</Badge>
+          </div>
+        ) : null}
+
+        <div className="absolute top-3 right-3 z-10">
+          <Badge tone="outline">{sectionLabel(perfume.section)}</Badge>
         </div>
 
-        {!inStock && (
-          <span className="absolute top-2 right-2 md:top-4 md:right-4 bg-white/90 px-1.5 md:px-2 py-0.5 md:py-1 text-[8px] md:text-[9px] tracking-[0.2em] text-stone-500 uppercase">
-            {AppStrings.product.outOfStock}
-          </span>
-        )}
-
-        {inStock && perfume.section === 'raspiv' && (
-          <span className="absolute top-2 right-2 md:top-4 md:right-4 text-[8px] md:text-[9px] tracking-[0.2em] text-stone-500 uppercase">
-            {AppStrings.product.original}
-          </span>
-        )}
-
-        {perfume.isBestseller && (
-          <span className="absolute top-2 left-2 md:top-4 md:left-4 text-[8px] md:text-[9px] tracking-[0.2em] text-stone-400 uppercase">
-            Хит
-          </span>
-        )}
-        {perfume.isNew && perfume.section !== 'raspiv' && (
-          <span className="absolute top-2 left-2 md:top-4 md:left-4 text-[8px] md:text-[9px] tracking-[0.2em] text-stone-500 uppercase">
-            Новинка
-          </span>
-        )}
-
-        <div className="absolute bottom-2 right-2 md:bottom-4 md:right-4 flex gap-1 md:gap-2">
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={(e) => {
-              e.preventDefault()
-              toggleFavorite(perfume.id)
-            }}
-            className={`w-7 h-7 md:w-9 md:h-9 border flex items-center justify-center transition-all duration-300 ${
+        <div className="absolute right-2 bottom-2 z-10 flex gap-1">
+          <button
+            type="button"
+            onClick={() => toggleFavorite(perfume.id)}
+            className={`flex h-11 w-11 items-center justify-center border ${
               favorite
-                ? 'bg-accent border-accent text-white'
-                : 'bg-white/80 backdrop-blur-sm border-stone-200 text-stone-600 sm:opacity-0 sm:group-hover:opacity-100 hover:border-accent hover:text-accent'
+                ? 'border-accent bg-accent text-white'
+                : 'border-stone-200 bg-background text-stone-900 hover:border-accent hover:text-accent'
             }`}
-            title={favorite ? 'Убрать из избранного' : 'В избранное'}
+            aria-label={favorite ? AppStrings.product.favoriteRemove : AppStrings.product.favoriteAdd}
           >
-            <Heart className={`w-3 h-3 md:w-3.5 md:h-3.5 ${favorite ? 'fill-current' : ''}`} />
-          </motion.button>
-
-          <motion.button
-            whileTap={{ scale: 0.9 }}
+            <Heart className={`h-4 w-4 ${favorite ? 'fill-current' : ''}`} />
+          </button>
+          <button
+            type="button"
             disabled={!inStock}
-            onClick={(e) => {
-              e.preventDefault()
+            onClick={() => {
               if (!inStock) return
               addItem({
                 offerId,
@@ -104,79 +91,37 @@ export default function ProductCard({ perfume, index = 0 }: ProductCardProps) {
                 section: perfume.section,
                 volumeMl: volume,
                 previewPricePerMl: perfume.pricePerMl,
+                image: perfume.image,
+                slug: perfume.slug,
               })
             }}
-            className="w-7 h-7 md:w-9 md:h-9 bg-white/80 backdrop-blur-sm border border-stone-200 flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
-            title={inStock ? AppStrings.product.addToCart : AppStrings.product.outOfStock}
+            className="flex h-11 w-11 items-center justify-center border border-stone-200 bg-background text-stone-900 hover:bg-stone-900 hover:text-stone-50 disabled:pointer-events-none disabled:opacity-40"
+            aria-label={inStock ? AppStrings.product.addToCart : AppStrings.product.outOfStock}
           >
-            <ShoppingBag className="w-3 h-3 md:w-3.5 md:h-3.5 text-stone-700" />
-          </motion.button>
+            <ShoppingBag className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
-      <div className="space-y-1 md:space-y-2 px-0.5">
-        <div className="space-y-0.5 md:space-y-1">
-          <p className="text-[8px] md:text-[9px] tracking-[0.16em] md:tracking-[0.2em] text-stone-400 uppercase truncate">
-            {perfume.brand}
-          </p>
-          <h3 className="text-sm md:text-base font-light text-stone-900 tracking-tight leading-tight line-clamp-2">
+      <div className="space-y-3 pt-3 text-left">
+        <Link href={href} className="block space-y-1">
+          <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">{perfume.brand}</p>
+          <h3 className="min-h-[40px] text-sm font-normal leading-5 text-stone-900 line-clamp-2 md:min-h-[44px] md:text-base md:leading-[22px]">
             {perfume.name}
           </h3>
+        </Link>
+
+        <div>
+          <p className="text-base font-normal tabular-nums text-stone-900">
+            {inStock ? formatTenge(totalPrice) : AppStrings.product.outOfStock}
+          </p>
+          <p className="text-xs text-muted tabular-nums">
+            {formatTenge(perfume.pricePerMl)} {AppStrings.product.perMl}
+          </p>
         </div>
 
-        <p className="hidden sm:block text-[10px] text-stone-400 font-light tracking-[0.2em] uppercase">
-          {perfume.tags.slice(0, 3).join(' • ')}
-        </p>
-
-        <p className="text-xs md:text-sm text-stone-900 font-light tracking-wide text-center pt-0.5 md:pt-1">
-          {inStock ? formatTenge(totalPrice) : AppStrings.product.outOfStock}
-        </p>
-
-        <div className="flex items-center justify-center gap-1 md:gap-2 pt-0.5 md:pt-1">
-          <span className="text-[9px] md:text-[10px] tracking-[0.2em] text-stone-400 uppercase">ml</span>
-          {VOLUME_OPTIONS.map((ml) => {
-            const selected = volume === ml
-            return (
-              <button
-                key={ml}
-                type="button"
-                disabled={!inStock}
-                onClick={() => setVolume(ml)}
-                className={`w-7 h-7 md:w-8 md:h-8 text-[10px] md:text-[11px] font-light border transition-colors duration-200 disabled:opacity-40 disabled:pointer-events-none ${
-                  selected
-                    ? 'border-stone-900 text-stone-900 bg-white'
-                    : 'border-stone-200 text-stone-400 hover:border-stone-400 hover:text-stone-700'
-                }`}
-                aria-pressed={selected}
-                aria-label={`${ml} миллилитров`}
-              >
-                {ml}
-              </button>
-            )
-          })}
-        </div>
-
-        <p className="text-[9px] md:text-[10px] text-stone-400 font-light text-center">
-          {formatTenge(perfume.pricePerMl)} {AppStrings.product.perMl}
-        </p>
-
-        <div className="hidden sm:flex items-center justify-center pt-1">
-          <div className="flex items-center gap-0.5">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <svg
-                key={i}
-                className={`w-2.5 h-2.5 ${
-                  i < starRating ? 'text-stone-300' : 'text-stone-200'
-                }`}
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-            ))}
-          </div>
-        </div>
+        <VolumeSelector value={volume} onChange={setVolume} disabled={!inStock} />
       </div>
-    </motion.div>
+    </article>
   )
 }

@@ -60,6 +60,8 @@ export interface CartItem {
   volumeMl: VolumeMl
   quantity: number
   previewPricePerMl: number
+  image?: string
+  slug?: string
 }
 
 export interface OrderRequestItem {
@@ -72,6 +74,7 @@ export interface OrderPayload {
   clientRequestId: string
   customerName: string
   phone: string
+  city?: string
   items: OrderRequestItem[]
 }
 

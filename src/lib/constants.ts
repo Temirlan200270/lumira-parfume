@@ -10,3 +10,7 @@ export const WHATSAPP_E164 = '+77479192766'
 export const WHATSAPP_LINK = 'https://wa.me/77479192766'
 
 export const CART_STORAGE_KEY = 'lumira-cart'
+export const FIRST_ADD_SESSION_KEY = 'lumira-first-add'
+export const CATALOG_SEARCH_ID = 'perfume-search'
+export const CATALOG_PAGE_SIZE = 24
+export const MIN_CITY_LENGTH = 2
