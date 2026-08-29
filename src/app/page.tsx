@@ -2,8 +2,6 @@ import { Suspense } from 'react'
 import Catalog from '@/components/sections/Catalog'
 import CatalogError from '@/components/catalog/CatalogError'
 import CatalogSkeleton from '@/components/catalog/CatalogSkeleton'
-import DiscoverySets from '@/components/sections/DiscoverySets'
-import Newsletter from '@/components/sections/Newsletter'
 import Stories from '@/components/sections/Stories'
 import { getCatalogResult } from '@/lib/catalog'
 
@@ -22,8 +20,6 @@ export default async function Home() {
         </Suspense>
       )}
       <Stories perfumes={perfumes} />
-      <DiscoverySets />
-      <Newsletter />
     </main>
   )
 }

@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Filter, Search, X } from 'lucide-react'
 import type { Perfume } from '@/lib/data'
 import ProductCard from '@/components/ui/ProductCard'
-import { CATALOG_PAGE_SIZE, CATALOG_SEARCH_ID } from '@/lib/constants'
+import { CATALOG_SEARCH_ID } from '@/lib/constants'
 import { aromaCountLabel, perfumeHref } from '@/lib/labels'
 import { POPULAR_QUERIES, rankPerfumes, searchSuggestions } from '@/lib/search'
 import { AppStrings } from '@/lib/strings'
@@ -48,7 +48,6 @@ export default function Catalog({ perfumes }: CatalogProps) {
   const selectedBrand = searchParams.get('brand') ?? ''
   const stock = (searchParams.get('stock') as StockFilter | null) ?? 'all'
   const sortBy = (searchParams.get('sort') as SortKey | null) ?? 'popular'
-  const page = Math.max(1, Number(searchParams.get('page') ?? '1') || 1)
   const minPrice = searchParams.get('min') ?? ''
   const maxPrice = searchParams.get('max') ?? ''
 
@@ -128,12 +127,6 @@ export default function Catalog({ perfumes }: CatalogProps) {
     () => (query.trim().length >= 2 ? searchSuggestions(perfumes, query) : []),
     [perfumes, query]
   )
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / CATALOG_PAGE_SIZE))
-  const needsPagination = filtered.length > CATALOG_PAGE_SIZE
-  const pageItems = needsPagination
-    ? filtered.slice((page - 1) * CATALOG_PAGE_SIZE, page * CATALOG_PAGE_SIZE)
-    : filtered
 
   const title =
     activeSection === 'raspiv'
@@ -453,29 +446,11 @@ export default function Catalog({ perfumes }: CatalogProps) {
             </div>
 
             {filtered.length > 0 ? (
-              <>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-                  {pageItems.map((perfume) => (
-                    <ProductCard key={perfume.id} perfume={perfume} />
-                  ))}
-                </div>
-                {needsPagination ? (
-                  <div className="mt-8 flex flex-wrap gap-2">
-                    {Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => (
-                      <button
-                        key={number}
-                        type="button"
-                        onClick={() => setParams({ page: number === 1 ? null : String(number) })}
-                        className={`h-11 min-w-11 px-3 text-sm ${
-                          page === number ? 'bg-stone-900 text-stone-50' : 'border border-stone-200'
-                        }`}
-                      >
-                        {number}
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+                {filtered.map((perfume) => (
+                  <ProductCard key={perfume.id} perfume={perfume} />
+                ))}
+              </div>
             ) : activeSection === 'raspiv' && !query.trim() ? (
               <div className="py-20">
                 <p className="text-sm text-stone-900">{AppStrings.catalog.emptyRaspiv}</p>
