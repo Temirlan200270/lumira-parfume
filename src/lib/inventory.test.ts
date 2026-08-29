@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { productSlug } from './catalog-seed'
+import { perfumeToSeed, productSlug } from './catalog-seed'
 import { inventory } from './inventory'
 import { perfumes } from './data'
+import { calculateOrder } from './order'
 
 test('inventory has 102 unique in-stock items with correct genders', () => {
   assert.equal(inventory.length, 102)
@@ -24,4 +25,33 @@ test('inventory has 102 unique in-stock items with correct genders', () => {
     perfumes.filter((perfume) => perfume.gender === 'female').length,
     23
   )
+})
+
+test('seed offer ids stay stable for order calculation', () => {
+  const perfume = perfumes.find((item) => item.brand === 'Lattafa' || item.name === 'Khamrah')
+    ?? perfumes.find((item) => item.brand !== 'Creed')
+  assert.ok(perfume)
+  const seeded = perfumeToSeed(perfume)
+  const result = calculateOrder(
+    [{ offerId: seeded.offer.id, volumeMl: 5, quantity: 1 }],
+    [
+      {
+        id: seeded.offer.id,
+        productId: seeded.product.id,
+        brand: perfume.brand,
+        name: perfume.name,
+        section: perfume.section,
+        pricePerMlTenge: perfume.pricePerMl,
+        isOriginal: false,
+        isInStock: true,
+        isActive: true,
+        productIsActive: true,
+      },
+    ]
+  )
+  assert.equal(result.ok, true)
+  if (result.ok) {
+    assert.equal(result.value.totalTenge, perfume.pricePerMl * 5)
+    assert.equal(result.value.items[0]?.name, perfume.name)
+  }
 })

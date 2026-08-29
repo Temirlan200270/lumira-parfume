@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Filter, Search, X } from 'lucide-react'
 import type { Perfume } from '@/lib/data'
@@ -469,6 +470,17 @@ export default function Catalog({ perfumes }: CatalogProps) {
                   </div>
                 ) : null}
               </>
+            ) : activeSection === 'raspiv' && !query.trim() ? (
+              <div className="py-20">
+                <p className="text-sm text-stone-900">{AppStrings.catalog.emptyRaspiv}</p>
+                <p className="mt-2 text-sm text-muted">{AppStrings.catalog.emptyRaspivLead}</p>
+                <Link
+                  href="/catalog?format=razliv"
+                  className="mt-6 inline-flex h-11 items-center text-sm text-stone-900 underline"
+                >
+                  {AppStrings.catalog.emptyRaspivCta}
+                </Link>
+              </div>
             ) : (
               <div className="py-20 text-center">
                 <p className="text-muted">

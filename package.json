@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "npx tsx --test src/lib/order.test.ts src/lib/inventory.test.ts",
     "typecheck": "tsc --noEmit",
-    "seed:sql": "npx tsx scripts/generate-seed.mts"
+    "seed:sql": "npx tsx scripts/generate-seed.mts",
+    "seed:push": "npx tsx scripts/push-inventory.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

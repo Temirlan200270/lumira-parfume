@@ -1,7 +1,9 @@
 import 'server-only'
 
-import { DEFAULT_VOLUME_ML, perfumes, priceForVolume, type Perfume } from '@/lib/data'
-import { perfumeToSeed } from '@/lib/catalog-seed'
+import { DEFAULT_VOLUME_ML, priceForVolume, type Perfume } from '@/lib/data'
+import { getPublicSupabaseEnv } from '@/lib/env'
+import { logger } from '@/lib/logger'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { CatalogSection, Gender, ProductNotes, CatalogDisplay } from '@/lib/types'
 
 const DEFAULT_DISPLAY: CatalogDisplay = {
@@ -80,28 +82,47 @@ export function toPerfumeCard(product: ProductRow, offer: OfferRow): Perfume {
   }
 }
 
-export function localCatalog(): Perfume[] {
-  return perfumes.map((perfume) => {
-    const seeded = perfumeToSeed(perfume)
-    return {
-      ...perfume,
-      id: seeded.offer.id,
-      offerId: seeded.offer.id,
-      productId: seeded.product.id,
-      slug: seeded.product.slug,
-      isInStock: true,
-      isOriginal: seeded.offer.isOriginal,
-    }
-  })
-}
-
 export interface CatalogResult {
   perfumes: Perfume[]
   error: boolean
 }
 
 export async function getCatalogResult(): Promise<CatalogResult> {
-  return { perfumes: localCatalog(), error: false }
+  if (!getPublicSupabaseEnv()) {
+    return { perfumes: [], error: true }
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient()
+    const [{ data: products, error: productsError }, { data: offers, error: offersError }] = await Promise.all([
+      supabase
+        .from('products')
+        .select('id, slug, brand, name, description, gender, notes, image_url, is_active'),
+      supabase
+        .from('offers')
+        .select('id, product_id, section, price_per_ml_tenge, is_original, is_in_stock, is_active'),
+    ])
+
+    if (productsError || offersError) {
+      logger.error('catalog_fetch_failed', {
+        message: productsError?.message ?? offersError?.message ?? 'empty',
+      })
+      return { perfumes: [], error: true }
+    }
+
+    const byProductId = new Map(((products ?? []) as ProductRow[]).map((product) => [product.id, product]))
+    const perfumes = ((offers ?? []) as OfferRow[]).flatMap((offer) => {
+      const product = byProductId.get(offer.product_id)
+      return product ? [toPerfumeCard(product, offer)] : []
+    })
+
+    return { perfumes, error: false }
+  } catch (error) {
+    logger.error('catalog_fetch_failed', {
+      message: error instanceof Error ? error.message : 'unknown',
+    })
+    return { perfumes: [], error: true }
+  }
 }
 
 export async function getCatalog(): Promise<Perfume[]> {
@@ -120,4 +141,3 @@ export function similarPerfumes(catalog: Perfume[], current: Perfume, limit = 4)
   const pool = sameSection.length >= limit ? sameSection : others
   return pool.slice(0, limit)
 }
-
