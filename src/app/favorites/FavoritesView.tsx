@@ -20,7 +20,7 @@ export default function FavoritesView({ perfumes }: { perfumes: Perfume[] }) {
         {items.length === 0 ? (
           <div className="space-y-4">
             <p className="text-sm text-muted">{AppStrings.favorites.empty}</p>
-            <Link href="/catalog">
+            <Link href="/">
               <Button>{AppStrings.favorites.toCatalog}</Button>
             </Link>
           </div>

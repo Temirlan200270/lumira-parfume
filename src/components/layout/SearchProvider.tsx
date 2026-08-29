@@ -37,14 +37,14 @@ export function SearchProvider({
   const closeSearch = useCallback(() => setIsOpen(false), [])
 
   const requestSearch = useCallback(() => {
-    if (pathname === '/catalog') {
+    if (pathname === '/') {
       const input = document.getElementById(CATALOG_SEARCH_ID)
       if (input instanceof HTMLInputElement) {
         input.scrollIntoView({ behavior: 'smooth', block: 'center' })
         window.setTimeout(() => input.focus(), 200)
         return
       }
-      router.push('/catalog')
+      router.push('/')
       return
     }
     setIsOpen(true)

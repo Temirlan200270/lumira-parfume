@@ -10,9 +10,9 @@ import { WHATSAPP_LINK } from '@/lib/constants'
 import { AppStrings } from '@/lib/strings'
 
 const desktopLinks = [
-  { href: '/catalog', label: AppStrings.nav.catalog },
-  { href: '/catalog?format=razliv', label: AppStrings.nav.razliv },
-  { href: '/catalog?format=raspiv', label: AppStrings.nav.raspiv },
+  { href: '/', label: AppStrings.nav.catalog },
+  { href: '/?format=razliv', label: AppStrings.nav.razliv },
+  { href: '/?format=raspiv', label: AppStrings.nav.raspiv },
   { href: '/how-it-works', label: AppStrings.nav.how },
 ]
 

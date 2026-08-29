@@ -23,6 +23,8 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@frontman-ai/nextjs": "^1.0.6",
+    "@opentelemetry/sdk-node": "^0.221.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

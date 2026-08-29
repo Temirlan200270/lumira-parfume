@@ -27,7 +27,7 @@ export default function SearchOverlay() {
     const next = value.trim()
     closeSearch()
     setQuery('')
-    router.push(next ? `/catalog?q=${encodeURIComponent(next)}` : '/catalog')
+    router.push(next ? `/?q=${encodeURIComponent(next)}` : '/')
   }
 
   const onSubmit = (event: FormEvent) => {

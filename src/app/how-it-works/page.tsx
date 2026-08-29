@@ -32,7 +32,7 @@ export default function HowItWorksPage() {
           <p className="text-sm leading-[22px] text-stone-700">{AppStrings.how.guarantee}</p>
         </section>
 
-        <Link href="/catalog" className="mt-10 inline-block text-sm text-stone-900 hover:underline">
+        <Link href="/" className="mt-10 inline-block text-sm text-stone-900 hover:underline">
           {AppStrings.home.shop}
         </Link>
       </div>

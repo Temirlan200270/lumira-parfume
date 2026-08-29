@@ -5,7 +5,7 @@ import { AppStrings } from '@/lib/strings'
 const items = [
   { href: '/how-it-works', text: AppStrings.home.trustKaspi, icon: Wallet, external: false },
   { href: 'https://wa.me/77479192766', text: AppStrings.home.trustWhatsApp, icon: MessageCircle, external: true },
-  { href: '/catalog', text: AppStrings.home.trustVolume, icon: Droplets, external: false },
+  { href: '/', text: AppStrings.home.trustVolume, icon: Droplets, external: false },
   { href: '/how-it-works', text: AppStrings.home.trustOriginal, icon: Check, external: false },
 ]
 

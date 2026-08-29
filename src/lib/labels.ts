@@ -9,7 +9,7 @@ export function sectionLabel(section: 'razliv' | 'raspiv'): string {
 }
 
 export function perfumeHref(slug: string | undefined): string {
-  return slug ? `/perfume/${slug}` : '/catalog'
+  return slug ? `/perfume/${slug}` : '/'
 }
 
 export function aromaCountLabel(count: number): string {

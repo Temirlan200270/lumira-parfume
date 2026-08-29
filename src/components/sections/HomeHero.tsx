@@ -14,7 +14,7 @@ export default function HomeHero() {
             </h1>
             <p className="mt-4 max-w-md text-sm leading-[22px] text-muted">{AppStrings.home.heroLead}</p>
             <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <Link href="/catalog">
+              <Link href="/">
                 <Button>{AppStrings.home.shop}</Button>
               </Link>
               <Link href="/how-it-works" className="text-sm text-stone-900 underline-offset-4 hover:underline">

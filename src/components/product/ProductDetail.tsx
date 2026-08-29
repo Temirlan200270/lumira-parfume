@@ -62,7 +62,7 @@ export default function ProductDetail({ perfume, similar }: ProductDetailProps) 
 
           <div className="lg:sticky lg:top-20">
             <Link
-              href={`/catalog?brand=${encodeURIComponent(perfume.brand)}`}
+              href={`/?brand=${encodeURIComponent(perfume.brand)}`}
               className="text-xs font-medium uppercase tracking-[0.12em] text-muted"
             >
               {perfume.brand}

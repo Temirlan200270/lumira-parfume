@@ -18,17 +18,17 @@ export default function Footer() {
             </h2>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/catalog" className="hover:text-white">
+                <Link href="/" className="hover:text-white">
                   {AppStrings.nav.catalog}
                 </Link>
               </li>
               <li>
-                <Link href="/catalog?format=razliv" className="hover:text-white">
+                <Link href="/?format=razliv" className="hover:text-white">
                   {AppStrings.nav.razliv}
                 </Link>
               </li>
               <li>
-                <Link href="/catalog?format=raspiv" className="hover:text-white">
+                <Link href="/?format=raspiv" className="hover:text-white">
                   {AppStrings.nav.raspiv}
                 </Link>
               </li>

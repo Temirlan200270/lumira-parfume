@@ -63,7 +63,7 @@ export default function CartDrawer() {
           {items.length === 0 ? (
             <div className="space-y-4">
               <p className="text-sm text-muted">{AppStrings.cart.empty}</p>
-              <Link href="/catalog" onClick={closeCart}>
+              <Link href="/" onClick={closeCart}>
                 <Button>{AppStrings.cart.toCatalog}</Button>
               </Link>
             </div>

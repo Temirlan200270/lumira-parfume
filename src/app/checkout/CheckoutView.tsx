@@ -47,7 +47,7 @@ function CheckoutSuccess({
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
             <Button fullWidth>{AppStrings.checkout.successWhatsApp}</Button>
           </a>
-          <Link href="/catalog">
+          <Link href="/">
             <Button variant="secondary" fullWidth>
               {AppStrings.checkout.successCatalog}
             </Button>
@@ -79,7 +79,7 @@ export default function CheckoutView() {
 
   useEffect(() => {
     if (ready && !success && items.length === 0) {
-      router.replace('/catalog')
+      router.replace('/')
     }
   }, [ready, items.length, router, success])
 

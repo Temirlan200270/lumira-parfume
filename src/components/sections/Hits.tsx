@@ -12,7 +12,7 @@ export default function Hits({ perfumes }: { perfumes: Perfume[] }) {
       <div className="container-lumira">
         <div className="mb-8 flex items-end justify-between gap-4">
           <h2 className="text-[28px] font-light leading-9 text-stone-900 md:text-[36px]">{AppStrings.home.hits}</h2>
-          <Link href="/catalog" className="text-sm text-stone-900 hover:underline">
+          <Link href="/" className="text-sm text-stone-900 hover:underline">
             {AppStrings.home.allAromas} →
           </Link>
         </div>

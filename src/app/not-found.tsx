@@ -11,7 +11,7 @@ export default function NotFound() {
         </h1>
         <p className="mt-4 text-sm text-muted">{AppStrings.notFound.lead}</p>
         <div className="mt-8">
-          <Link href="/catalog">
+          <Link href="/">
             <Button>{AppStrings.notFound.cta}</Button>
           </Link>
         </div>

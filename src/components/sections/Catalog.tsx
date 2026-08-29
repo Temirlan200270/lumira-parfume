@@ -150,13 +150,13 @@ export default function Catalog({ perfumes }: CatalogProps) {
         : AppStrings.catalog.leadAll
 
   const tabs: { id: SectionFilter; label: string; hint?: string }[] = [
-    { id: 'all', label: 'Все' },
+    { id: 'all', label: AppStrings.catalog.tabAll },
     { id: 'razliv', label: AppStrings.catalog.razliv },
     { id: 'raspiv', label: AppStrings.catalog.raspiv, hint: AppStrings.catalog.originalChip },
   ]
 
   const reset = () => {
-    router.replace('/catalog', { scroll: false })
+    router.replace(pathname, { scroll: false })
   }
 
   const filters = (
@@ -255,48 +255,51 @@ export default function Catalog({ perfumes }: CatalogProps) {
   return (
     <section className="section-y bg-background">
       <div className="container-lumira">
-        <h1 className="mb-3 text-[32px] font-light leading-10 text-stone-900 md:text-[40px]">{title}</h1>
+        <h1 className="mb-6 text-[32px] font-light leading-10 text-stone-900 md:text-[40px]">{title}</h1>
 
-        <div
-          role="tablist"
-          aria-label="Раздел каталога"
-          className="mb-3 flex gap-1 overflow-x-auto"
-        >
-          {tabs.map((tab) => {
-            const active = activeSection === tab.id
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setParams({ format: tab.id === 'all' ? null : tab.id })}
-                className={`inline-flex h-11 shrink-0 items-center gap-2 px-4 text-sm ${
-                  active
-                    ? 'bg-stone-900 text-stone-50'
-                    : 'border border-stone-200 text-muted hover:border-stone-900 hover:text-stone-900'
-                }`}
-              >
-                {tab.label}
-                {tab.hint ? (
-                  <span className={`text-xs normal-case tracking-normal ${active ? 'text-stone-50/80' : 'text-muted'}`}>
-                    {tab.hint}
-                  </span>
-                ) : null}
-              </button>
-            )
-          })}
-        </div>
+        <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center">
+          <div
+            role="tablist"
+            aria-label="Раздел каталога"
+            className="flex shrink-0 gap-1 overflow-x-auto"
+          >
+            {tabs.map((tab) => {
+              const active = activeSection === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setParams({ format: tab.id === 'all' ? null : tab.id })}
+                  className={`inline-flex h-11 shrink-0 items-center gap-2 px-4 text-xs uppercase tracking-[0.12em] ${
+                    active
+                      ? 'bg-stone-900 text-stone-50'
+                      : 'border border-stone-200 text-muted hover:border-stone-900 hover:text-stone-900'
+                  }`}
+                >
+                  {tab.label}
+                  {tab.hint ? (
+                    <span
+                      className={`rounded-[2px] px-1.5 py-0.5 text-xs font-normal normal-case tracking-normal ${
+                        active ? 'bg-white/15 text-stone-50/80' : 'bg-stone-100 text-muted'
+                      }`}
+                    >
+                      {tab.hint}
+                    </span>
+                  ) : null}
+                </button>
+              )
+            })}
+          </div>
 
-        <p className="mb-4 text-sm leading-[22px] text-muted">{lead}</p>
-
-        <form
-          className="relative mb-6"
-          onSubmit={(event) => {
-            event.preventDefault()
-            setParams({ q: query.trim() || null })
-          }}
-        >
+          <form
+            className="relative min-w-0 flex-1"
+            onSubmit={(event) => {
+              event.preventDefault()
+              setParams({ q: query.trim() || null })
+            }}
+          >
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <label htmlFor={CATALOG_SEARCH_ID} className="sr-only">
             {AppStrings.catalog.searchLabel}
@@ -358,7 +361,10 @@ export default function Catalog({ perfumes }: CatalogProps) {
               </div>
             </div>
           ) : null}
-        </form>
+          </form>
+        </div>
+
+        <p className="mb-6 text-sm leading-[22px] text-muted">{lead}</p>
 
         <div className="flex flex-col gap-8 lg:flex-row">
           <div className="lg:hidden">
@@ -475,7 +481,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
                 <p className="text-sm text-stone-900">{AppStrings.catalog.emptyRaspiv}</p>
                 <p className="mt-2 text-sm text-muted">{AppStrings.catalog.emptyRaspivLead}</p>
                 <Link
-                  href="/catalog?format=razliv"
+                  href="/?format=razliv"
                   className="mt-6 inline-flex h-11 items-center text-sm text-stone-900 underline"
                 >
                   {AppStrings.catalog.emptyRaspivCta}

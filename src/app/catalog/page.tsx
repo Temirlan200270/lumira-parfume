@@ -1,29 +1,18 @@
-import { Suspense } from 'react'
-import Catalog from '@/components/sections/Catalog'
-import CatalogError from '@/components/catalog/CatalogError'
-import CatalogSkeleton from '@/components/catalog/CatalogSkeleton'
-import { getCatalogResult } from '@/lib/catalog'
-import type { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'Каталог | Lumira',
-  description: 'Разлив и оригинальный распив. Объём выбираете на карточке.',
-}
-
-export default async function CatalogPage() {
-  const { perfumes, error } = await getCatalogResult()
-
-  return (
-    <main className="flex-1">
-      {error ? (
-        <CatalogError />
-      ) : (
-        <Suspense fallback={<CatalogSkeleton />}>
-          <Catalog perfumes={perfumes} />
-        </Suspense>
-      )}
-    </main>
-  )
+export default async function CatalogPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const params = await searchParams
+  const next = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    const raw = Array.isArray(value) ? value[0] : value
+    if (raw) next.set(key, raw)
+  }
+  const qs = next.toString()
+  redirect(qs ? `/?${qs}` : '/')
 }

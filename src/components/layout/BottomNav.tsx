@@ -15,7 +15,7 @@ export default function BottomNav() {
     return null
   }
 
-  const catalogActive = pathname === '/catalog' || pathname.startsWith('/perfume')
+  const catalogActive = pathname === '/' || pathname.startsWith('/perfume')
   const favoritesActive = pathname === '/favorites'
 
   return (
@@ -26,7 +26,7 @@ export default function BottomNav() {
     >
       <div className="grid h-14 grid-cols-4">
         <Link
-          href="/catalog"
+          href="/"
           className={`flex flex-col items-center justify-center gap-0.5 text-[12px] ${
             catalogActive ? 'text-stone-900' : 'text-muted'
           }`}
