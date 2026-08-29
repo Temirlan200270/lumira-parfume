@@ -31,7 +31,7 @@ export default function ProductCard({ perfume }: ProductCardProps) {
   const inStock = perfume.isInStock !== false
   const totalPrice = priceForVolume(perfume.pricePerMl, volume)
   const offerId = perfume.offerId ?? perfume.id
-  const href = perfumeHref(perfume.slug)
+  const href = perfumeHref(perfume.slug, perfume.section)
 
   const statusBadge = !inStock
     ? { tone: 'oos' as const, label: AppStrings.product.outOfStock }

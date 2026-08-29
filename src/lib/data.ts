@@ -81,30 +81,35 @@ export interface Perfume {
 const EMPTY_NOTES = { top: [], middle: [], base: [] }
 const DEFAULT_RATINGS = { longevity: 7, sillage: 7, compliments: 7, versatility: 7 }
 
-export const perfumes: Perfume[] = inventory.map((item, index) => ({
-  id: String(index + 1),
-  name: item.name,
-  brand: item.brand,
-  price: RAZLIV_PRICE_PER_ML * DEFAULT_VOLUME_ML,
-  pricePerMl: RAZLIV_PRICE_PER_ML,
-  section: 'razliv',
-  image: '',
-  category: 'catalog',
-  gender: item.gender,
-  notes: EMPTY_NOTES,
-  ratings: DEFAULT_RATINGS,
-  season: '',
-  timeOfDay: '',
-  mood: '',
-  description: '',
-  tags: [],
-  moodIcon: '',
-  bottleColor: '#e7e5e4',
-  bottleAccent: '#a8a29e',
-  pairsWith: [],
-  isBestseller: Boolean(item.hit),
-  isInStock: true,
-}))
+export const perfumes: Perfume[] = inventory.map((item, index) => {
+  const section = item.section ?? 'razliv'
+  const pricePerMl = item.pricePerMl ?? RAZLIV_PRICE_PER_ML
+  return {
+    id: String(index + 1),
+    name: item.name,
+    brand: item.brand,
+    price: pricePerMl * DEFAULT_VOLUME_ML,
+    pricePerMl,
+    section,
+    image: item.image ?? '',
+    category: 'catalog',
+    gender: item.gender,
+    notes: EMPTY_NOTES,
+    ratings: DEFAULT_RATINGS,
+    season: '',
+    timeOfDay: '',
+    mood: '',
+    description: '',
+    tags: item.tags ?? [],
+    moodIcon: '',
+    bottleColor: '#e7e5e4',
+    bottleAccent: '#a8a29e',
+    pairsWith: [],
+    isBestseller: Boolean(item.hit),
+    isInStock: true,
+    isOriginal: section === 'raspiv',
+  }
+})
 
 export const discoverySets = [
   {

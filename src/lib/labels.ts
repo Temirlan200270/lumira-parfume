@@ -8,8 +8,10 @@ export function sectionLabel(section: 'razliv' | 'raspiv'): string {
   return section === 'raspiv' ? 'Распив' : 'Разлив'
 }
 
-export function perfumeHref(slug: string | undefined): string {
-  return slug ? `/perfume/${slug}` : '/'
+export function perfumeHref(slug: string | undefined, section?: 'razliv' | 'raspiv'): string {
+  if (!slug) return '/'
+  if (section === 'raspiv') return `/perfume/${slug}?format=raspiv`
+  return `/perfume/${slug}`
 }
 
 export function aromaCountLabel(count: number): string {

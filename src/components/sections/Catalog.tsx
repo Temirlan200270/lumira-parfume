@@ -325,7 +325,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
                   key={perfume.id}
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => router.push(perfumeHref(perfume.slug))}
+                  onClick={() => router.push(perfumeHref(perfume.slug, perfume.section))}
                   className="w-full border-b border-stone-100 px-4 py-3 text-left last:border-b-0 hover:bg-stone-50"
                 >
                   <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">{perfume.brand}</p>

@@ -96,7 +96,7 @@ export default function SearchOverlay() {
                     onClick={() => {
                       closeSearch()
                       setQuery('')
-                      router.push(perfumeHref(perfume.slug))
+                      router.push(perfumeHref(perfume.slug, perfume.section))
                     }}
                   >
                     <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted">

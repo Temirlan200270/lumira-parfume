@@ -1,10 +1,21 @@
-import type { Gender } from './types'
+import type { CatalogSection, Gender } from './types'
+
+export const PRODUCT_IMAGES_PUBLIC_BASE =
+  'https://ilfmtebqvdyjwtxvsqzw.supabase.co/storage/v1/object/public/product-images'
+
+export function productImageUrl(fileName: string): string {
+  return `${PRODUCT_IMAGES_PUBLIC_BASE}/${fileName}`
+}
 
 export interface InventoryItem {
   brand: string
   name: string
   gender: Gender
   hit?: boolean
+  section?: CatalogSection
+  pricePerMl?: number
+  tags?: string[]
+  image?: string
 }
 
 export const inventory: InventoryItem[] = [
@@ -89,7 +100,7 @@ export const inventory: InventoryItem[] = [
   { brand: 'Louis Vuitton', name: 'Ombre Nomade', gender: 'unisex' },
   { brand: 'Louis Vuitton', name: 'Pacific Chill', gender: 'unisex' },
   { brand: 'Maison Francis Kurkdjian', name: 'Baccarat Rouge 540', gender: 'unisex', hit: true },
-  { brand: 'Mancera', name: 'Red Tobacco', gender: 'unisex' },
+  { brand: 'Mancera', name: 'Red Tobacco', gender: 'unisex', image: productImageUrl('mancera-red-tobacco.jpg') },
   { brand: 'Tiziana Terenzi', name: 'Kirke', gender: 'unisex' },
   { brand: 'Montale', name: 'Arabians Tonka', gender: 'unisex' },
   { brand: 'Nasomatto', name: 'Black Afgano', gender: 'unisex' },
@@ -112,4 +123,32 @@ export const inventory: InventoryItem[] = [
   { brand: 'Zielinski & Rozen', name: 'Black Pepper & Amber, Neroli', gender: 'unisex' },
   { brand: 'Zielinski & Rozen', name: 'Vanilla Blend', gender: 'unisex' },
   { brand: 'Richard', name: 'White Chocola', gender: 'unisex' },
+
+  {
+    brand: 'Thomas Kosmala',
+    name: 'No.12 Oud Douze',
+    gender: 'unisex',
+    section: 'raspiv',
+    pricePerMl: 1600,
+    tags: ['уд дуз', 'томас космала'],
+    image: productImageUrl('thomas-kosmala-no-12-oud-douze.jpg'),
+  },
+  {
+    brand: 'Mancera',
+    name: 'Cedrat Boise',
+    gender: 'unisex',
+    section: 'raspiv',
+    pricePerMl: 1500,
+    tags: ['цедрат боис', 'манкера'],
+    image: productImageUrl('mancera-cedrat-boise.jpg'),
+  },
+  {
+    brand: 'Mancera',
+    name: 'Red Tobacco',
+    gender: 'unisex',
+    section: 'raspiv',
+    pricePerMl: 1500,
+    tags: ['ред тобако', 'манкера'],
+    image: productImageUrl('mancera-red-tobacco.jpg'),
+  },
 ]

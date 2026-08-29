@@ -84,6 +84,20 @@ for (const perfume of perfumes) {
 }
 
 const productRows = [...products.values()]
+const { data: existingProducts, error: existingError } = await admin
+  .from('products')
+  .select('id, image_url')
+if (existingError) throw new Error(existingError.message)
+
+const existingImages = new Map(
+  (existingProducts ?? []).map((row) => [row.id as string, String(row.image_url ?? '')])
+)
+for (const product of productRows) {
+  if (!product.image_url) {
+    product.image_url = existingImages.get(product.id) ?? ''
+  }
+}
+
 const { error: productError } = await admin.from('products').upsert(productRows)
 if (productError) throw new Error(productError.message)
 

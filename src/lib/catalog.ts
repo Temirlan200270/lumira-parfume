@@ -130,9 +130,15 @@ export async function getCatalog(): Promise<Perfume[]> {
   return result.perfumes
 }
 
-export async function getPerfumeBySlug(slug: string): Promise<Perfume | null> {
+export async function getPerfumeBySlug(
+  slug: string,
+  section?: CatalogSection
+): Promise<Perfume | null> {
   const catalog = await getCatalog()
-  return catalog.find((perfume) => perfume.slug === slug) ?? null
+  const matches = catalog.filter((perfume) => perfume.slug === slug)
+  if (matches.length === 0) return null
+  if (section) return matches.find((perfume) => perfume.section === section) ?? matches[0] ?? null
+  return matches.find((perfume) => perfume.section === 'razliv') ?? matches[0] ?? null
 }
 
 export function similarPerfumes(catalog: Perfume[], current: Perfume, limit = 4): Perfume[] {
