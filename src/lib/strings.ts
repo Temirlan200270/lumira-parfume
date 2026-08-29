@@ -111,6 +111,8 @@ export const AppStrings = {
     cart: 'Корзина',
     search: 'Поиск',
     whatsapp: 'WhatsApp',
+    themeDark: 'Тёмная тема',
+    themeLight: 'Светлая тема',
   },
   home: {
     heroTitle: 'Оригинальная парфюмерия по миллилитру',

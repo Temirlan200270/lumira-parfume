@@ -5,6 +5,7 @@ import { Heart, Search, ShoppingBag } from 'lucide-react'
 import { useCart } from '@/components/cart/CartProvider'
 import { useSearchUi } from '@/components/layout/SearchProvider'
 import Logo from '@/components/ui/Logo'
+import ThemeToggle from '@/components/layout/ThemeToggle'
 import { WHATSAPP_LINK } from '@/lib/constants'
 import { AppStrings } from '@/lib/strings'
 
@@ -45,6 +46,7 @@ export default function Navbar() {
           >
             <Search className="h-4 w-4" />
           </button>
+          <ThemeToggle />
           <Link
             href="/favorites"
             className="hidden h-11 w-11 items-center justify-center text-stone-900 lg:flex"
@@ -60,7 +62,7 @@ export default function Navbar() {
           >
             <ShoppingBag className="h-4 w-4" />
             {itemCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-4 bg-stone-900 px-1 text-center text-[11px] leading-4 text-white tabular-nums">
+              <span className="absolute top-1.5 right-1.5 min-w-4 bg-stone-900 px-1 text-center text-[11px] leading-4 text-stone-50 tabular-nums">
                 {itemCount}
               </span>
             )}

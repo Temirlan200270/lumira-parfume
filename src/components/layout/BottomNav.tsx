@@ -52,7 +52,7 @@ export default function BottomNav() {
           <ShoppingBag className="h-4 w-4" />
           {AppStrings.nav.cart}
           {itemCount > 0 && (
-            <span className="absolute top-1 right-[calc(50%-22px)] min-w-4 bg-stone-900 px-1 text-center text-[11px] leading-4 text-white tabular-nums">
+            <span className="absolute top-1 right-[calc(50%-22px)] min-w-4 bg-stone-900 px-1 text-center text-[11px] leading-4 text-stone-50 tabular-nums">
               {itemCount}
             </span>
           )}

@@ -11,6 +11,7 @@ import { ToastProvider } from '@/components/ui/Toast'
 import { CartProvider } from '@/components/cart/CartProvider'
 import CartDrawer from '@/components/cart/CartDrawer'
 import StoreFrame from '@/components/layout/StoreFrame'
+import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import { getCatalog } from '@/lib/catalog'
 import './globals.css'
 
@@ -41,8 +42,15 @@ export default async function RootLayout({
   const perfumes = await getCatalog()
 
   return (
-    <html lang="ru" className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}>
+    <html lang="ru" suppressHydrationWarning className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{if(localStorage.getItem('lumira-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}})();",
+          }}
+        />
+        <ThemeProvider>
         <ToastProvider>
           <FavoritesProvider>
             <CartProvider>
@@ -58,6 +66,7 @@ export default async function RootLayout({
             </CartProvider>
           </FavoritesProvider>
         </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

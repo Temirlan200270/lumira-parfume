@@ -23,6 +23,28 @@
   --stone-800: #292524;
   --stone-900: #1c1917;
   --stone-950: #0c0a09;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #0c0a09;
+  --foreground: #f5f5f4;
+  --muted: #a8a29e;
+  --border: #292524;
+  --footer: #000000;
+  --paper: #1c1917;
+  --stone-50: #0c0a09;
+  --stone-100: #1c1917;
+  --stone-200: #292524;
+  --stone-300: #44403c;
+  --stone-400: #78716c;
+  --stone-500: #a8a29e;
+  --stone-600: #d6d3d1;
+  --stone-700: #e7e5e4;
+  --stone-800: #f5f5f4;
+  --stone-900: #fafaf9;
+  --stone-950: #ffffff;
+  color-scheme: dark;
 }
 
 @theme inline {

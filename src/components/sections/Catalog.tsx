@@ -171,7 +171,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
               type="button"
               onClick={() => setParams({ gender: gender.id === 'all' ? null : gender.id })}
               className={`flex h-11 w-full items-center px-3 text-left text-sm ${
-                selectedGender === gender.id ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100'
+                selectedGender === gender.id ? 'bg-stone-900 text-stone-50' : 'text-stone-700 hover:bg-stone-100'
               }`}
             >
               {gender.label}
@@ -233,7 +233,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
             type="button"
             onClick={() => setParams({ stock: item === 'all' ? null : item })}
             className={`flex h-11 w-full items-center px-3 text-left text-sm ${
-              stock === item ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100'
+              stock === item ? 'bg-stone-900 text-stone-50' : 'text-stone-700 hover:bg-stone-100'
             }`}
           >
             {item === 'all'
@@ -272,13 +272,13 @@ export default function Catalog({ perfumes }: CatalogProps) {
                 onClick={() => setParams({ format: tab.id === 'all' ? null : tab.id })}
                 className={`inline-flex h-11 shrink-0 items-center gap-2 px-4 text-sm ${
                   active
-                    ? 'bg-stone-900 text-white'
+                    ? 'bg-stone-900 text-stone-50'
                     : 'border border-stone-200 text-muted hover:border-stone-900 hover:text-stone-900'
                 }`}
               >
                 {tab.label}
                 {tab.hint ? (
-                  <span className={`text-xs normal-case tracking-normal ${active ? 'text-white/80' : 'text-muted'}`}>
+                  <span className={`text-xs normal-case tracking-normal ${active ? 'text-stone-50/80' : 'text-muted'}`}>
                     {tab.hint}
                   </span>
                 ) : null}
@@ -388,7 +388,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
             <div className="fixed inset-0 z-[70] lg:hidden">
               <button
                 type="button"
-                className="absolute inset-0 bg-stone-950/40"
+                className="absolute inset-0 bg-black/40"
                 aria-label="Закрыть фильтры"
                 onClick={closeFilters}
               />
@@ -460,7 +460,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
                         type="button"
                         onClick={() => setParams({ page: number === 1 ? null : String(number) })}
                         className={`h-11 min-w-11 px-3 text-sm ${
-                          page === number ? 'bg-stone-900 text-white' : 'border border-stone-200'
+                          page === number ? 'bg-stone-900 text-stone-50' : 'border border-stone-200'
                         }`}
                       >
                         {number}

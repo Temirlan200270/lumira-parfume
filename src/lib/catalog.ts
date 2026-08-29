@@ -2,9 +2,6 @@ import 'server-only'
 
 import { DEFAULT_VOLUME_ML, perfumes, priceForVolume, type Perfume } from '@/lib/data'
 import { perfumeToSeed } from '@/lib/catalog-seed'
-import { getPublicSupabaseEnv } from '@/lib/env'
-import { logger } from '@/lib/logger'
-import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { CatalogSection, Gender, ProductNotes, CatalogDisplay } from '@/lib/types'
 
 const DEFAULT_DISPLAY: CatalogDisplay = {
@@ -104,46 +101,7 @@ export interface CatalogResult {
 }
 
 export async function getCatalogResult(): Promise<CatalogResult> {
-  if (!getPublicSupabaseEnv()) {
-    return { perfumes: localCatalog(), error: false }
-  }
-
-  try {
-    const supabase = await createSupabaseServerClient()
-    const { data: products, error: productsError } = await supabase
-      .from('products')
-      .select('id, slug, brand, name, description, gender, notes, image_url, is_active')
-      .eq('is_active', true)
-
-    if (productsError || !products) {
-      logger.error('catalog_products_failed', { message: productsError?.message ?? 'empty' })
-      return { perfumes: [], error: true }
-    }
-
-    const { data: offers, error: offersError } = await supabase
-      .from('offers')
-      .select('id, product_id, section, price_per_ml_tenge, is_original, is_in_stock, is_active')
-      .eq('is_active', true)
-
-    if (offersError || !offers) {
-      logger.error('catalog_offers_failed', { message: offersError?.message ?? 'empty' })
-      return { perfumes: [], error: true }
-    }
-
-    const productMap = new Map((products as ProductRow[]).map((product) => [product.id, product]))
-    const cards: Perfume[] = []
-    for (const offer of offers as OfferRow[]) {
-      const product = productMap.get(offer.product_id)
-      if (!product) continue
-      cards.push(toPerfumeCard(product, offer))
-    }
-    return { perfumes: cards, error: false }
-  } catch (error) {
-    logger.error('catalog_query_failed', {
-      message: error instanceof Error ? error.message : 'unknown',
-    })
-    return { perfumes: [], error: true }
-  }
+  return { perfumes: localCatalog(), error: false }
 }
 
 export async function getCatalog(): Promise<Perfume[]> {

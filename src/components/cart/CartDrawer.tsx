@@ -32,7 +32,7 @@ export default function CartDrawer() {
     <>
       <button
         type="button"
-        className="fixed inset-0 z-[60] bg-stone-950/40"
+        className="fixed inset-0 z-[60] bg-black/40"
         aria-label={AppStrings.cart.close}
         onClick={closeCart}
       />

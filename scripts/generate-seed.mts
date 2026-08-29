@@ -23,7 +23,11 @@ for (const perfume of perfumes) {
   offers.push(seeded.offer)
 }
 
-const productValues = [...products.values()]
+const productList = [...products.values()]
+const newIds = productList.map((product) => sqlString(product.id)).join(', ')
+const newSlugs = productList.map((product) => sqlString(product.slug)).join(', ')
+
+const productValues = productList
   .map((product) => {
     return `(${sqlString(product.id)}, ${sqlString(product.slug)}, ${sqlString(product.brand)}, ${sqlString(product.name)}, ${sqlString(product.description)}, ${sqlString(product.gender)}, ${sqlJson(product.notes)}::jsonb, ${sqlString(product.imageUrl)}, true)`
   })
@@ -35,7 +39,15 @@ const offerValues = offers
   })
   .join(',\n')
 
-const sql = `-- Seed current Lumira catalog into products and offers.
+const sql = `-- Replace storefront inventory. Hide everything else.
+
+update public.offers set is_active = false, is_in_stock = false;
+update public.products set is_active = false;
+
+update public.products
+set slug = slug || '-retired-' || left(id::text, 8)
+where id not in (${newIds})
+  and slug in (${newSlugs});
 
 insert into public.products (id, slug, brand, name, description, gender, notes, image_url, is_active)
 values
@@ -57,8 +69,10 @@ on conflict (id) do update set
   product_id = excluded.product_id,
   section = excluded.section,
   price_per_ml_tenge = excluded.price_per_ml_tenge,
-  is_original = excluded.is_original;
+  is_original = excluded.is_original,
+  is_in_stock = excluded.is_in_stock,
+  is_active = excluded.is_active;
 `
 
-writeFileSync(join(here, '../supabase/migrations/20260827120100_seed_catalog.sql'), sql)
+writeFileSync(join(here, '../supabase/migrations/20260829153000_replace_inventory.sql'), sql)
 console.info(`Seeded ${products.size} products and ${offers.length} offers`)
