@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import Logo from '@/components/ui/Logo'
-import { WHATSAPP_LINK, WHATSAPP_PHONE } from '@/lib/constants'
+import { STORE_MAPS_URL, WHATSAPP_LINK, WHATSAPP_PHONE } from '@/lib/constants'
 import { AppStrings } from '@/lib/strings'
 
 export default function Footer() {
   return (
-    <footer className="mt-auto bg-footer text-stone-400">
+    <footer className="mt-auto bg-footer pb-[calc(56px+env(safe-area-inset-bottom))] text-stone-400 lg:pb-0">
       <div className="container-lumira section-y">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
           <div>
@@ -45,6 +45,24 @@ export default function Footer() {
               {AppStrings.footer.contacts}
             </h2>
             <ul className="space-y-3 text-sm">
+              <li>
+                <a
+                  href={STORE_MAPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white"
+                  aria-label={`${AppStrings.footer.addressLabel}: ${AppStrings.footer.city}, ${AppStrings.footer.address}`}
+                >
+                  <span className="block">{AppStrings.footer.city}</span>
+                  <span className="block">{AppStrings.footer.address}</span>
+                </a>
+              </li>
+              <li>
+                <span className="block text-xs uppercase tracking-[0.12em] text-stone-500">
+                  {AppStrings.footer.hoursLabel}
+                </span>
+                {AppStrings.footer.hours}
+              </li>
               <li>
                 <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="hover:text-white">
                   WhatsApp: {WHATSAPP_PHONE}

@@ -8,6 +8,7 @@ export const MAX_NAME_LENGTH = 80
 export const WHATSAPP_PHONE = '+7 747 919 2766'
 export const WHATSAPP_E164 = '+77479192766'
 export const WHATSAPP_LINK = 'https://wa.me/77479192766'
+export const STORE_MAPS_URL = `https://2gis.kz/pavlodar/search/${encodeURIComponent('Назарбаева 283/1')}`
 
 export const CART_STORAGE_KEY = 'lumira-cart'
 export const FIRST_ADD_SESSION_KEY = 'lumira-first-add'

@@ -179,6 +179,11 @@ export const AppStrings = {
     nav: 'Навигация',
     contacts: 'Контакты',
     legal: 'Документы',
+    city: 'г. Павлодар',
+    addressLabel: 'Адрес',
+    address: 'Н. Назарбаева 283/1',
+    hoursLabel: 'Время работы',
+    hours: '10:00 – 20:00',
     copyright: '© 2026 Lumira Parfume. Все права защищены.',
   },
   notFound: {
