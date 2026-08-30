@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react'
+import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
@@ -6,14 +6,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: ReactNode
 }
 
-export default function Input({
-  label,
-  error,
-  hint,
-  id,
-  className = '',
-  ...props
-}: InputProps) {
+const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { label, error, hint, id, className = '', ...props },
+  ref,
+) {
   const inputId = id ?? props.name
   const errorId = error && inputId ? `${inputId}-error` : undefined
 
@@ -23,10 +19,11 @@ export default function Input({
         {label}
       </span>
       <input
+        ref={ref}
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={errorId}
-        className={`h-11 w-full rounded-[2px] border bg-background px-3 text-base md:text-sm text-stone-900 placeholder:text-muted ${
+        className={`h-11 w-full scroll-mt-20 rounded-[2px] border bg-background px-3 text-base text-stone-900 placeholder:text-muted md:text-sm ${
           error ? 'border-error' : 'border-stone-200 focus:border-stone-900'
         } ${className}`}
         {...props}
@@ -40,4 +37,6 @@ export default function Input({
       ) : null}
     </label>
   )
-}
+})
+
+export default Input

@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useState, useSyncExternalStore } from 'react'
+import { FormEvent, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/components/cart/CartProvider'
@@ -60,14 +60,16 @@ function CheckoutSuccess({
 }
 
 export default function CheckoutView() {
-  const { items, previewTotal, clearCart, newRequestId } = useCart()
+  const { items, previewTotal, clearCart, newRequestId, openCart } = useCart()
   const router = useRouter()
+  const nameRef = useRef<HTMLInputElement>(null)
+  const phoneRef = useRef<HTMLInputElement>(null)
+  const offerRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('+7 ')
-  const [city, setCity] = useState('')
   const [offer, setOffer] = useState(false)
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
-  const [errors, setErrors] = useState<{ name?: string; phone?: string; city?: string; offer?: string; form?: string }>(
+  const [errors, setErrors] = useState<{ name?: string; phone?: string; offer?: string; form?: string }>(
     {}
   )
   const [success, setSuccess] = useState<{ orderNumber: string; total: number; whatsappUrl: string } | null>(null)
@@ -138,20 +140,24 @@ export default function CheckoutView() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const nextErrors: typeof errors = {}
-    if (!normalizeName(name)) {
-      nextErrors.name = 'Имя должно содержать только буквы и быть не короче двух символов'
+    if (!name.trim()) {
+      nextErrors.name = AppStrings.checkout.nameRequired
+    } else if (!normalizeName(name)) {
+      nextErrors.name = AppStrings.checkout.nameInvalid
     }
     if (!normalizePhone(phone)) {
-      nextErrors.phone = 'Введите телефон в формате +7 XXX XXX XX XX'
-    }
-    if (city.trim().length < 2) {
-      nextErrors.city = AppStrings.checkout.cityError
+      nextErrors.phone = AppStrings.checkout.phoneInvalid
     }
     if (!offer) {
       nextErrors.offer = AppStrings.checkout.offerError
     }
     setErrors(nextErrors)
-    if (Object.keys(nextErrors).length > 0) return
+    if (Object.keys(nextErrors).length > 0) {
+      if (nextErrors.name) nameRef.current?.focus()
+      else if (nextErrors.phone) phoneRef.current?.focus()
+      else offerRef.current?.focus()
+      return
+    }
 
     setStatus('loading')
     const requestId = newRequestId()
@@ -163,7 +169,6 @@ export default function CheckoutView() {
           clientRequestId: requestId,
           customerName: name,
           phone,
-          city: city.trim(),
           acceptedLegal: true,
           items: items.map((item) => ({
             offerId: item.offerId,
@@ -194,7 +199,14 @@ export default function CheckoutView() {
 
   return (
     <main className="flex-1 bg-background">
-      <div className="container-lumira section-y">
+      <div className="container-lumira pt-6 pb-28 md:section-y md:pb-16">
+        <button
+          type="button"
+          onClick={openCart}
+          className="mb-6 text-sm text-muted hover:text-stone-900"
+        >
+          ← {AppStrings.checkout.backToCart}
+        </button>
         <h1 className="mb-8 text-[32px] font-light leading-10 text-stone-900 md:text-[40px]">
           {AppStrings.checkout.title}
         </h1>
@@ -202,6 +214,7 @@ export default function CheckoutView() {
           <div className="lg:order-2 lg:sticky lg:top-20">{summary}</div>
           <form onSubmit={onSubmit} noValidate className="space-y-5 lg:order-1">
             <Input
+              ref={nameRef}
               label={AppStrings.checkout.name}
               name="name"
               value={name}
@@ -211,6 +224,7 @@ export default function CheckoutView() {
               autoComplete="name"
             />
             <Input
+              ref={phoneRef}
               label={AppStrings.checkout.phone}
               name="phone"
               type="tel"
@@ -219,15 +233,6 @@ export default function CheckoutView() {
               placeholder={AppStrings.checkout.phonePlaceholder}
               error={errors.phone}
               autoComplete="tel"
-            />
-            <Input
-              label={AppStrings.checkout.city}
-              name="city"
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              placeholder={AppStrings.checkout.cityPlaceholder}
-              error={errors.city}
-              autoComplete="address-level2"
             />
 
             <div>
@@ -246,10 +251,11 @@ export default function CheckoutView() {
 
             <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm">
               <input
+                ref={offerRef}
                 type="checkbox"
                 checked={offer}
                 onChange={(event) => setOffer(event.target.checked)}
-                className="mt-1 h-5 w-5 rounded-[2px] border-stone-300"
+                className={`mt-1 h-5 w-5 rounded-[2px] ${errors.offer ? 'border-error outline outline-1 outline-error' : 'border-stone-300'}`}
               />
               <span>
                 {AppStrings.checkout.offerPrefix}{' '}
@@ -266,9 +272,11 @@ export default function CheckoutView() {
             {errors.offer ? <p className="text-sm text-error">{errors.offer}</p> : null}
             {errors.form ? <p className="text-sm text-error">{errors.form}</p> : null}
 
-            <Button type="submit" fullWidth disabled={status === 'loading' || !offer}>
-              {status === 'loading' ? AppStrings.checkout.submitting : AppStrings.checkout.submit}
-            </Button>
+            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-background px-4 py-3 md:static md:border-0 md:bg-transparent md:px-0 md:py-0">
+              <Button type="submit" fullWidth disabled={status === 'loading'}>
+                {status === 'loading' ? AppStrings.checkout.submitting : AppStrings.checkout.submit}
+              </Button>
+            </div>
           </form>
         </div>
       </div>

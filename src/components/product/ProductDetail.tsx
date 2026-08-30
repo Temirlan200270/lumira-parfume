@@ -9,7 +9,6 @@ import ProductPhoto from '@/components/ui/ProductPhoto'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import VolumeSelector from '@/components/ui/VolumeSelector'
-import ProductCard from '@/components/ui/ProductCard'
 import { useCart } from '@/components/cart/CartProvider'
 import { useFavorites } from '@/components/ui/FavoritesProvider'
 import { genderLabel, sectionLabel } from '@/lib/labels'
@@ -17,10 +16,9 @@ import { AppStrings } from '@/lib/strings'
 
 interface ProductDetailProps {
   perfume: Perfume
-  similar: Perfume[]
 }
 
-export default function ProductDetail({ perfume, similar }: ProductDetailProps) {
+export default function ProductDetail({ perfume }: ProductDetailProps) {
   const [volume, setVolume] = useState<VolumeMl>(DEFAULT_VOLUME_ML)
   const { addItem } = useCart()
   const { isFavorite, toggleFavorite } = useFavorites()
@@ -103,11 +101,6 @@ export default function ProductDetail({ perfume, similar }: ProductDetailProps) 
             </div>
 
             <ul className="mt-6 space-y-2 text-sm text-muted">
-              <li>
-                {perfume.section === 'raspiv'
-                  ? AppStrings.product.formatRaspiv
-                  : AppStrings.product.formatRazliv}
-              </li>
               <li>{AppStrings.product.kaspi}</li>
               <li>{AppStrings.product.delivery}</li>
             </ul>
@@ -149,17 +142,6 @@ export default function ProductDetail({ perfume, similar }: ProductDetailProps) 
                     <p className="text-sm text-stone-900">{perfume.notes.base.join(', ')}</p>
                   </div>
                 ) : null}
-              </div>
-            </section>
-          ) : null}
-
-          {similar.length > 0 ? (
-            <section>
-              <h2 className="mb-6 text-[28px] font-light text-stone-900">{AppStrings.product.similar}</h2>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6">
-                {similar.map((item) => (
-                  <ProductCard key={item.id} perfume={item} />
-                ))}
               </div>
             </section>
           ) : null}

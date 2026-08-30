@@ -37,6 +37,24 @@ test('normalizePhone accepts KZ formats', () => {
   assert.equal(normalizePhone('123'), null)
 })
 
+test('validateOrderPayload accepts an order without city and ignores a leftover city field', () => {
+  const item = { offerId: offer.id, volumeMl: 5, quantity: 1 }
+  const base = {
+    clientRequestId: '33333333-3333-4333-8333-333333333333',
+    customerName: 'Алия',
+    phone: '+77479192766',
+    acceptedLegal: true,
+    items: [item],
+  }
+  const withoutCity = validateOrderPayload(base)
+  assert.equal(withoutCity.ok, true)
+  if (withoutCity.ok) assert.equal('city' in withoutCity.value, false)
+
+  const withCity = validateOrderPayload({ ...base, city: 'Алматы' })
+  assert.equal(withCity.ok, true)
+  if (withCity.ok) assert.equal('city' in withCity.value, false)
+})
+
 test('validateOrderPayload rejects empty cart, bad phone and missing legal consent', () => {
   const empty = validateOrderPayload({
     clientRequestId: '33333333-3333-4333-8333-333333333333',
@@ -138,6 +156,7 @@ test('WhatsApp text includes order number, volumes and server total', () => {
   assert.match(text, /Алия/)
   assert.match(text, /10 мл/)
   assert.match(text, /8 000 ₸/)
+  assert.doesNotMatch(text, /Город/)
   const url = buildWhatsAppUrl(text)
   assert.match(url, /^https:\/\/wa\.me\/77479192766\?text=/)
 })

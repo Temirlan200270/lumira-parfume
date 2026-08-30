@@ -24,10 +24,10 @@ export default function BottomNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Нижняя навигация"
     >
-      <div className="grid h-14 grid-cols-4">
+      <div className="flex h-14">
         <Link
           href="/"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[12px] ${
+          className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-[12px] ${
             catalogActive ? 'text-stone-900' : 'text-muted'
           }`}
         >
@@ -36,7 +36,7 @@ export default function BottomNav() {
         </Link>
         <Link
           href="/favorites"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[12px] ${
+          className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-[12px] ${
             favoritesActive ? 'text-stone-900' : 'text-muted'
           }`}
         >
@@ -46,7 +46,7 @@ export default function BottomNav() {
         <button
           type="button"
           onClick={openCart}
-          className="relative flex flex-col items-center justify-center gap-0.5 text-[12px] text-muted"
+          className="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-[12px] text-muted"
           aria-label={AppStrings.nav.cart}
         >
           <ShoppingBag className="h-4 w-4" />
@@ -61,7 +61,7 @@ export default function BottomNav() {
           href={WHATSAPP_LINK}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex flex-col items-center justify-center gap-0.5 text-[12px] text-muted"
+          className="flex flex-1 flex-col items-center justify-center gap-0.5 text-[12px] text-muted"
         >
           <MessageCircle className="h-4 w-4" />
           {AppStrings.nav.whatsapp}

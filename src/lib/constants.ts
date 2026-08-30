@@ -15,4 +15,3 @@ export const LEGAL_OPERATOR_IDN = '[ИИН/БИН]'
 export const CART_STORAGE_KEY = 'lumira-cart'
 export const FIRST_ADD_SESSION_KEY = 'lumira-first-add'
 export const CATALOG_SEARCH_ID = 'perfume-search'
-export const MIN_CITY_LENGTH = 2

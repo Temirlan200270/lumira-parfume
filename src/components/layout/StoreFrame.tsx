@@ -10,7 +10,7 @@ export default function StoreFrame({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`flex flex-1 flex-col ${isAdmin ? '' : 'pt-14 md:pt-16'} ${
+      className={`flex min-h-0 flex-1 flex-col ${isAdmin ? '' : 'pt-14 md:pt-16'} ${
         hideBottom ? '' : 'pb-[calc(56px+env(safe-area-inset-bottom))] lg:pb-0'
       }`}
     >

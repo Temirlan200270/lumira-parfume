@@ -1,8 +1,12 @@
+import type { Metadata, Viewport } from 'next'
 import CheckoutView from './CheckoutView'
-import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Оформление заказа | Lumira',
+}
+
+export const viewport: Viewport = {
+  interactiveWidget: 'resizes-content',
 }
 
 export default function CheckoutPage() {

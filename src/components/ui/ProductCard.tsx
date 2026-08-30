@@ -43,7 +43,7 @@ function ProductCard({ perfume, index = Number.POSITIVE_INFINITY }: ProductCardP
 
   return (
     <article className="group">
-      <div className="relative aspect-[3/4] overflow-hidden bg-paper">
+      <div className="relative aspect-[4/5] overflow-hidden bg-paper md:aspect-[3/4]">
         <Link href={href} className="absolute inset-0 block cursor-pointer">
           <div className="h-full w-full transition-transform duration-700 ease-out group-hover:scale-[1.02]">
             <ProductPhoto
@@ -107,7 +107,7 @@ function ProductCard({ perfume, index = Number.POSITIVE_INFINITY }: ProductCardP
       <div className="space-y-3 pt-3 text-left">
         <Link href={href} className="block space-y-1">
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">{perfume.brand}</p>
-          <h3 className="min-h-[40px] text-sm font-normal leading-5 text-stone-900 line-clamp-2 md:min-h-[44px] md:text-base md:leading-[22px]">
+          <h3 className="text-sm font-normal leading-5 text-stone-900 line-clamp-2 md:min-h-[44px] md:text-base md:leading-[22px]">
             {perfume.name}
           </h3>
         </Link>

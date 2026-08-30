@@ -4,7 +4,6 @@ import {
   MAX_LINE_QUANTITY,
   MIN_NAME_LENGTH,
   MAX_NAME_LENGTH,
-  MIN_CITY_LENGTH,
   WHATSAPP_E164,
 } from './constants'
 import type {
@@ -103,15 +102,6 @@ export function validateOrderPayload(input: unknown): OrderResult<OrderPayload> 
     return fail('invalid_phone', 'Введите телефон в формате +7 XXX XXX XX XX')
   }
 
-  let city: string | undefined
-  if (typeof body.city === 'string') {
-    const trimmed = body.city.replace(/\s+/g, ' ').trim()
-    if (trimmed.length < MIN_CITY_LENGTH) {
-      return fail('invalid_payload', 'Укажите город')
-    }
-    city = trimmed
-  }
-
   if (!Array.isArray(body.items)) {
     return fail('empty_cart', 'Корзина пуста')
   }
@@ -159,7 +149,6 @@ export function validateOrderPayload(input: unknown): OrderResult<OrderPayload> 
       clientRequestId: body.clientRequestId,
       customerName,
       phone,
-      city,
       acceptedLegal: true,
       items,
     },
@@ -204,14 +193,12 @@ export function calculateOrder(
 export function buildWhatsAppText(params: {
   orderNumber: string
   customerName: string
-  city?: string
   items: OrderItemSnapshot[]
   totalTenge: number
 }): string {
   const lines = [
     `Заказ ${params.orderNumber}`,
     `Имя: ${params.customerName}`,
-    ...(params.city ? [`Город: ${params.city}`] : []),
     '',
     'Состав:',
     ...params.items.map((item) => {
@@ -235,7 +222,6 @@ export function buildTelegramText(params: {
   orderNumber: string
   customerName: string
   phoneE164: string
-  city?: string
   items: OrderItemSnapshot[]
   totalTenge: number
 }): string {
@@ -243,7 +229,6 @@ export function buildTelegramText(params: {
     `Новый заказ ${params.orderNumber}`,
     `Имя: ${params.customerName}`,
     `Телефон: ${params.phoneE164}`,
-    ...(params.city ? [`Город: ${params.city}`] : []),
     '',
     ...params.items.map((item) => {
       const section = item.section === 'raspiv' ? 'Распив' : 'Разлив'

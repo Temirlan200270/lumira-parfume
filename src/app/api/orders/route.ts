@@ -59,12 +59,11 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ ok: false, message }, { status })
 }
 
-function whatsappFromOrder(order: StoredOrder, city?: string): string {
+function whatsappFromOrder(order: StoredOrder): string {
   return buildWhatsAppUrl(
     buildWhatsAppText({
       orderNumber: order.order_number,
       customerName: order.customer_name,
-      city,
       items: order.items,
       totalTenge: order.total_tenge,
     })
@@ -88,7 +87,8 @@ async function sendTelegram(text: string): Promise<boolean> {
       }),
     })
     if (!response.ok) {
-      logger.error('telegram_http_failed', { status: response.status })
+      const detail = (await response.text()).slice(0, 200)
+      logger.error('telegram_http_failed', { status: response.status, detail })
       return false
     }
     return true
@@ -136,7 +136,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       orderNumber: order.order_number,
-      whatsappUrl: whatsappFromOrder(order, payload.city),
+      whatsappUrl: whatsappFromOrder(order),
     })
   }
 
@@ -190,7 +190,6 @@ export async function POST(request: Request) {
       client_request_id: payload.clientRequestId,
       telegram_sent: false,
       legal_accepted_at: new Date().toISOString(),
-      city: payload.city ?? null,
     })
     .select('id, order_number, customer_name, items, total_tenge')
     .single()
@@ -206,7 +205,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: true,
         orderNumber: order.order_number,
-        whatsappUrl: whatsappFromOrder(order, payload.city),
+        whatsappUrl: whatsappFromOrder(order),
       })
     }
   }
@@ -223,7 +222,6 @@ export async function POST(request: Request) {
       orderNumber: order.order_number,
       customerName: payload.customerName,
       phoneE164: payload.phone,
-      city: payload.city,
       items: snapshots,
       totalTenge: calculated.value.totalTenge,
     })
@@ -249,13 +247,10 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     orderNumber: order.order_number,
-    whatsappUrl: whatsappFromOrder(
-      {
-        ...order,
-        items: snapshots,
-        total_tenge: calculated.value.totalTenge,
-      },
-      payload.city
-    ),
+    whatsappUrl: whatsappFromOrder({
+      ...order,
+      items: snapshots,
+      total_tenge: calculated.value.totalTenge,
+    }),
   })
 }

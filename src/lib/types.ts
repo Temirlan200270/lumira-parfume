@@ -74,7 +74,6 @@ export interface OrderPayload {
   clientRequestId: string
   customerName: string
   phone: string
-  city?: string
   acceptedLegal: boolean
   items: OrderRequestItem[]
 }

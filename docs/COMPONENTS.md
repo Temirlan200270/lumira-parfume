@@ -1,40 +1,46 @@
-# Components Reference
+# Компоненты
 
-## Sections
+Список по тому, что реально в дереве рендера. Файлы из раннего лендинга, которые никто не импортирует, — в конце.
 
-| Компонент | Props | Описание |
-|-----------|-------|----------|
-| `Hero` | — | Главный экран, CTA к квизу и каталогу |
-| `Categories` | — | 6 карточек категорий с href `#catalog-{id}` |
-| `FragranceQuiz` | — | 4 вопроса, результат → 3 аромата |
-| `Catalog` | `perfumes: Perfume[]` | Фильтры: категория/пол/настроение, сортировка |
-| `Bestsellers` | `perfumes: Perfume[]` | Featured + сетка остальных |
-| `NewArrivals` | `perfumes: Perfume[]` | Сетка `isNew` ароматов |
-| `Collections` | — | 4 thematic подборки |
-| `Stories` | — | 3 отзыва покупателей |
-| `SimilarPerfumes` | `perfumes: Perfume[]` | 4 карточки по `pairsWith` или fallback |
-| `FragranceAnalysis` | `perfumes: Perfume[]` | `PerfumeNotes` + `CharacterBars` |
-| `Blog` | — | 3 статьи-заглушки |
-| `FragranceComparison` | `perfumes: Perfume[]` | Выбор 2 ароматов → сравнение 4 метрик |
-| `DiscoverySets` | — | 3 набора пробников |
-| `Newsletter` | — | Форма подписки |
+## Layout и оболочка
 
-## UI Components
+| Компонент | Роль |
+|-----------|------|
+| `Navbar` | шапка: каталог, поиск, избранное, корзина, WhatsApp |
+| `Footer` | навигация, адрес, часы, WhatsApp, legal |
+| `BottomNav` | mobile: каталог, избранное, корзина, WhatsApp |
+| `StoreFrame` | отступ под шапку и нижнее меню |
+| `SearchProvider` / `SearchOverlay` | поиск с других страниц |
+| `CartProvider` / `CartDrawer` | корзина |
+| `FavoritesProvider` | избранное |
+| `Toast` | тосты |
 
-| Компонент | Props | Описание |
-|-----------|-------|----------|
-| `PerfumeBottle` | `color, accent, label` | SVG-флакон с градиентом |
-| `ProductCard` | `perfume, index` | Карточка с бутылкой, тегами, цена, избранное |
-| `PerfumeNotes` | `perfume` | 3 колонки нот + описание при клике |
-| `CharacterBars` | `perfume` | 5 анимированных полос |
-| `AIConsultant` | — | Чат-виджет с mock-ответами |
-| `CursorFollower` | — | Радиальный след курсора (z-40) |
-| `FavoritesProvider` | `children` | Context + localStorage |
-| `PageTransition` | `children` | AnimatePresence обёртка |
+## Витрина
 
-## Известные ограничения
+| Компонент | Роль |
+|-----------|------|
+| `Catalog` | табы формата, поиск, фильтры, сетка |
+| `CatalogGrid` | внутри Catalog, `memo` |
+| `ProductCard` | фото, формат, объём, в корзину / избранное |
+| `ProductPhoto` | фото или плейсхолдер, lazy ниже первого экрана |
+| `VolumeSelector` | 5 / 10 / 20 мл |
+| `Badge` | хит, новинка, нет в наличии, формат |
+| `Stories` | истории только про ароматы, которые есть в каталоге и в наличии |
+| `CatalogError` / `CatalogSkeleton` | ошибка и загрузка каталога |
 
-- `AIConsultant` — только mock-ответы
-- Корзина — не реализована (кнопка `console.log`)
-- Блог — ссылки на `/blog/{id}` не ведут в реальные страницы
-- Сравнение — только в рамках одной сессии
+## Покупка и контент
+
+| Компонент | Роль |
+|-----------|------|
+| `ProductDetail` | PDP |
+| `CheckoutView` | оформление: имя, телефон, согласие; кнопка всегда активна, ошибки с фокусом |
+| `LegalSection` | секции политики |
+| `Logo`, `Button`, `Input` | общие |
+
+## Не смонтированы
+
+Есть в `src/`, на `/` и в layout не подключены. Не описывать их как живые фичи:
+
+`Hero`, `HomeHero`, `Categories`, `FragranceQuiz`, `Bestsellers`, `Hits`, `NewArrivals`, `Collections`, `Blog`, `Newsletter`, `DiscoverySets`, `HowItWorksStrip`, `TrustRow`, `FormatTiles`, `FragranceAnalysis`, `SimilarPerfumes`, `FragranceComparison`, `AIConsultant`, `PerfumeBottle`, `PerfumeNotes`, `CharacterBars`, `CursorFollower`, `PageTransition`, `TransitionOverlay`, `CheckoutModal`.
+
+`AIConsultant` — mock, обещает квиз, советует чужие SKU. По целевому состоянию не включать, пока ответы не идут только из каталога.

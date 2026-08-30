@@ -46,7 +46,7 @@ export default async function RootLayout({
 
   return (
     <html lang="ru" suppressHydrationWarning className={`${geistSans.variable} ${playfair.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">
+      <body className="min-h-screen font-sans">
         <script
           dangerouslySetInnerHTML={{
             __html:
@@ -57,13 +57,15 @@ export default async function RootLayout({
           <FavoritesProvider>
             <CartProvider>
               <SearchProvider perfumes={perfumes}>
-                <Navbar />
-                <StoreFrame>{children}</StoreFrame>
-                <CartDrawer />
-                <SearchOverlay />
-                <BottomNav />
-                <div className="grain-overlay" />
-                <Footer />
+                <div className="flex min-h-screen flex-col">
+                  <Navbar />
+                  <StoreFrame>{children}</StoreFrame>
+                  <CartDrawer />
+                  <SearchOverlay />
+                  <BottomNav />
+                  <div className="grain-overlay" />
+                  <Footer />
+                </div>
               </SearchProvider>
             </CartProvider>
           </FavoritesProvider>

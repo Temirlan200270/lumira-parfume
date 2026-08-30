@@ -143,10 +143,3 @@ export async function getPerfumeBySlug(
   if (section) return matches.find((perfume) => perfume.section === section) ?? matches[0] ?? null
   return matches.find((perfume) => perfume.section === 'razliv') ?? matches[0] ?? null
 }
-
-export function similarPerfumes(catalog: Perfume[], current: Perfume, limit = 4): Perfume[] {
-  const others = catalog.filter((perfume) => perfume.id !== current.id)
-  const sameSection = others.filter((perfume) => perfume.section === current.section)
-  const pool = sameSection.length >= limit ? sameSection : others
-  return pool.slice(0, limit)
-}

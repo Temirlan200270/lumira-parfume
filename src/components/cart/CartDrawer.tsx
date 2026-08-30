@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import Link from 'next/link'
-import { Minus, Plus, Trash2, X } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { useCart } from '@/components/cart/CartProvider'
 import ProductPhoto from '@/components/ui/ProductPhoto'
 import Button from '@/components/ui/Button'
@@ -59,11 +59,21 @@ export default function CartDrawer() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-6 md:px-6">
+        <div
+          className={
+            items.length === 0
+              ? 'flex min-h-0 flex-1 flex-col overflow-y-auto px-4 md:px-6'
+              : 'flex-1 overflow-y-auto px-4 py-6 md:px-6'
+          }
+        >
           {items.length === 0 ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted">{AppStrings.cart.empty}</p>
-              <Link href="/" onClick={closeCart}>
+            <div className="flex min-h-full flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+              <ShoppingBag className="h-5 w-5 text-muted" strokeWidth={1.25} aria-hidden />
+              <h3 className="mt-6 text-sm text-stone-900">{AppStrings.cart.empty}</h3>
+              <p className="mt-2 max-w-[17.5rem] text-sm leading-relaxed text-muted">
+                {AppStrings.cart.emptyHint}
+              </p>
+              <Link href="/" onClick={closeCart} className="mt-8">
                 <Button>{AppStrings.cart.toCatalog}</Button>
               </Link>
             </div>

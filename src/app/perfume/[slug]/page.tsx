@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import ProductDetail from '@/components/product/ProductDetail'
-import { getCatalog, getPerfumeBySlug, similarPerfumes } from '@/lib/catalog'
+import { getPerfumeBySlug } from '@/lib/catalog'
 import type { CatalogSection } from '@/lib/types'
 import type { Metadata } from 'next'
 
@@ -33,8 +33,6 @@ export default async function PerfumePage({ params, searchParams }: PageProps) {
   const query = await searchParams
   const perfume = await getPerfumeBySlug(slug, asSection(query.format))
   if (!perfume) notFound()
-  const catalog = await getCatalog()
-  const similar = similarPerfumes(catalog, perfume)
 
-  return <ProductDetail perfume={perfume} similar={similar} />
+  return <ProductDetail perfume={perfume} />
 }

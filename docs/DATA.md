@@ -1,71 +1,58 @@
-# Data Model
+# Данные
 
-## Perfume (src/lib/data.ts)
+## Ассортимент
 
-```typescript
-interface Perfume {
-  id: string
-  name: string
-  brand: string
-  price: number
-  image: string
-  category: 'luxury' | 'designer' | 'niche'
-  gender: 'male' | 'female' | 'unisex'
-  notes: { top: string[]; middle: string[]; base: string[] }
-  ratings: { longevity: number; sillage: number; compliments: number; versatility: number }
-  season: string
-  timeOfDay: string
-  mood: string
-  description: string
-  tags: string[]
-  moodIcon: string
-  bottleColor: string
-  bottleAccent: string
-  pairsWith: string[]
-  isBestseller?: boolean
-  isNew?: boolean
-}
-```
+Источник состава витрины: `src/lib/inventory.ts`.
 
-## Категории
+Тип строки — `InventoryItem`: бренд, название, пол, опционально `hit`, `section` (`razliv` | `raspiv`), `pricePerMl`, `tags`, `image`.
 
-- `luxury` — люкс сегмент (Creed, Xerjoff, Roja и др.)
-- `designer` — масс-маркет (Dior, Chanel, YSL и др.)
-- `niche` — нишевая (Le Labo, Byredo, Diptyque и др.)
+Разлив без своей цены получает `800 ₸` за 1 мл (`RAZLIV_PRICE_PER_ML` в `data.ts`). Распив задаёт свою цену за мл.
 
-## Discovery Sets
+`src/lib/data.ts` собирает локальный массив `perfumes` из inventory — для тестов и seed. Живая витрина идёт из Supabase (`src/lib/catalog.ts` → `toPerfumeCard`).
 
-```typescript
-interface DiscoverySet {
-  id: string
-  name: string
-  description: string
-  price: number
-  image: string
-  perfumes: string[]  // id из perfumes
-}
-```
+Не храните в доках полный список SKU: он меняется. Смотрите inventory и тесты `src/lib/inventory.test.ts`.
 
-## Квиз
+## Perfume (карточка на витрине)
 
-4 вопроса, каждый с 3-4 вариантами. Логика подбора:
-- sweet → `notes.middle.includes('Жасмин')`
-- fresh → `notes.top.includes('Бергамот')`
-- остальные → fallback на первые 3 аромата
+Поля, которыми реально пользуется UI:
 
-## Favorites Context
+- `id` — id оффера
+- `offerId`, `productId`, `slug`
+- `name`, `brand`, `gender`
+- `section` — `razliv` | `raspiv`
+- `price`, `pricePerMl`
+- `image`
+- `isBestseller`, `isNew`, `isInStock`, `isOriginal`
+- `notes`, `tags`, `description` — если заполнены в notes/display продукта
 
-```typescript
-interface FavoritesContextType {
-  favorites: string[]
-  toggleFavorite: (id: string) => void
-  isFavorite: (id: string) => boolean
-  compareIds: string[]
-  toggleCompare: (id: string) => void
-  isInCompare: (id: string) => boolean
-}
-```
+Один product может иметь два offer (как Red Tobacco).
 
-Хранилище: `localStorage`
-- `essence-favorites`
-- `essence-compare`
+## Заказ
+
+`OrderPayload`: `clientRequestId`, `customerName`, `phone`, `acceptedLegal`, `items[]` (`offerId`, `volumeMl` 5|10|20, `quantity`).
+
+В `orders`:
+
+- `customer_name`, `phone_e164`
+- `items` (jsonb, серверные цены)
+- `total_tenge`, `status`
+- `legal_accepted_at` — факт согласия
+- `telegram_sent`
+
+## Клиентское хранилище
+
+| Ключ | Что |
+|------|-----|
+| `lumira-cart` | корзина |
+| `lumira-favorites` | избранное |
+| `lumira-compare` | сравнение (код есть, на витрине не ведущее) |
+
+Старые ключи `essence-*` при чтении мигрируются.
+
+## Юридические плейсхолдеры
+
+В `src/lib/constants.ts`: `LEGAL_OPERATOR_NAME`, `LEGAL_OPERATOR_IDN`. Пока не подставлять выдуманный ИП. Оферта на сайте — заглушка «в процессе подготовки». Политика описывает текущие сервисы (Supabase eu-central-1, Vercel, WhatsApp, Telegram).
+
+## Точка и контакты
+
+Павлодар, Н. Назарбаева 283/1, 10:00–20:00, WhatsApp из `constants.ts`.

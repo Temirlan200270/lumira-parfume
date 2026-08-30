@@ -1,7 +1,23 @@
-# Documentation
+# Документация Lumira
 
-- [README.md](README.md) — Обзор проекта
-- [ARCHITECTURE.md](ARCHITECTURE.md) — Архитектура и лейаут
-- [DATA.md](DATA.md) — Модели данных и контент
-- [COMPONENTS.md](COMPONENTS.md) — Справочник компонентов
-- [FIXES.md](FIXES.md) — Исправленные баги
+**Источник истины о том, что уже сделано — код.** Эти файлы должны ему соответствовать. Если расходится — править документ, не подгонять код под старый текст.
+
+## Как устроен магазин сейчас
+
+- [README.md](../README.md) — запуск, скрипты, маршруты
+- [ARCHITECTURE.md](ARCHITECTURE.md) — layout, данные, фильтры, заказ
+- [DATA.md](DATA.md) — ассортимент, Perfume, заказ, согласие
+- [COMPONENTS.md](COMPONENTS.md) — что смонтировано и что лежит мёртвым грузом
+
+## Направление продукта (не снимок кода)
+
+Эти файлы описывают, **куда** идти, а не каждый текущий компонент:
+
+- [Lumira-Target-State.md](Lumira-Target-State.md) — целевой UX витрины
+- [Lumira-Visual-Target.md](Lumira-Visual-Target.md) — визуальный ориентир
+- [UX_AUDIT.md](UX_AUDIT.md) — аудит ранней версии сайта
+
+## Архив
+
+- [FIXES.md](FIXES.md) — журнал правок прототипа Essence; не читать как текущий backlog
+- [README.md](README.md) — коротко: зачем эта папка

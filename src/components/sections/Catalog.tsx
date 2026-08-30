@@ -10,6 +10,7 @@ import { CATALOG_SEARCH_ID } from '@/lib/constants'
 import { aromaCountLabel } from '@/lib/labels'
 import { POPULAR_QUERIES, rankPerfumes, searchSuggestions } from '@/lib/search'
 import { AppStrings } from '@/lib/strings'
+import LogoMark from '@/components/ui/LogoMark'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 
 const GENDER_OPTIONS: { id: 'all' | Perfume['gender']; label: string }[] = [
@@ -200,6 +201,11 @@ export default function Catalog({ perfumes }: CatalogProps) {
   const brands = useMemo(() => {
     return [...new Set(perfumes.map((perfume) => perfume.brand))].sort((a, b) => a.localeCompare(b, 'ru'))
   }, [perfumes])
+  const hasOutOfStock = useMemo(
+    () => perfumes.some((perfume) => perfume.isInStock === false),
+    [perfumes],
+  )
+  const effectiveStock = hasOutOfStock ? stock : 'all'
 
   const scoped = useMemo(
     () =>
@@ -207,7 +213,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
         section: activeSection,
         gender: selectedGender,
         brand: selectedBrand,
-        stock,
+        stock: effectiveStock,
         minPrice: deferredMinPrice,
         maxPrice: deferredMaxPrice,
         sortBy,
@@ -217,7 +223,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
       activeSection,
       selectedGender,
       selectedBrand,
-      stock,
+      effectiveStock,
       deferredMinPrice,
       deferredMaxPrice,
       sortBy,
@@ -240,13 +246,6 @@ export default function Catalog({ perfumes }: CatalogProps) {
       : activeSection === 'razliv'
         ? AppStrings.catalog.razliv
         : AppStrings.catalog.all
-
-  const lead =
-    activeSection === 'raspiv'
-      ? AppStrings.catalog.leadRaspiv
-      : activeSection === 'razliv'
-        ? AppStrings.catalog.leadRazliv
-        : AppStrings.catalog.leadAll
 
   const tabs: { id: SectionFilter; label: string }[] = [
     { id: 'all', label: AppStrings.catalog.tabAll },
@@ -346,13 +345,13 @@ export default function Catalog({ perfumes }: CatalogProps) {
           {AppStrings.catalog.stock}
         </legend>
         <div className="grid grid-cols-1 gap-1">
-          {(['all', 'in', 'out'] as const).map((item) => (
+          {(['all', 'in', ...(hasOutOfStock ? (['out'] as const) : [])] as const).map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => setParams({ stock: item === 'all' ? null : item })}
               className={`flex min-h-9 items-center px-3 text-left text-sm ${
-                stock === item ? 'bg-stone-900 text-stone-50' : 'text-stone-700 hover:bg-stone-100'
+                effectiveStock === item ? 'bg-stone-900 text-stone-50' : 'text-stone-700 hover:bg-stone-100'
               }`}
             >
               {item === 'all'
@@ -374,6 +373,9 @@ export default function Catalog({ perfumes }: CatalogProps) {
   return (
     <section className="section-y bg-background">
       <div className="container-lumira">
+        <div className="mb-6">
+          <LogoMark />
+        </div>
         <h1 className="mb-6 text-[32px] font-light leading-10 text-stone-900 md:text-[40px]">{title}</h1>
 
         <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center">
@@ -479,8 +481,6 @@ export default function Catalog({ perfumes }: CatalogProps) {
           </form>
         </div>
 
-        <p className="mb-6 text-sm leading-[22px] text-muted">{lead}</p>
-
         <div className="flex flex-col gap-8 lg:flex-row">
           <div className="lg:hidden">
             <div className="mb-4 flex gap-2">
@@ -556,7 +556,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
               !hasNarrowingFilters({
                 gender: selectedGender,
                 brand: selectedBrand,
-                stock,
+                stock: effectiveStock,
                 minPrice,
                 maxPrice,
                 query,
