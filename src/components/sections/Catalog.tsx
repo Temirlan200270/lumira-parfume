@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { Filter, Search, X } from 'lucide-react'
 import type { Perfume } from '@/lib/data'
 import ProductCard from '@/components/ui/ProductCard'
+import Button from '@/components/ui/Button'
 import { applyCatalogFilters, hasNarrowingFilters } from '@/lib/catalog-filter'
 import { CATALOG_SEARCH_ID } from '@/lib/constants'
 import { aromaCountLabel } from '@/lib/labels'
@@ -510,12 +511,12 @@ export default function Catalog({ perfumes }: CatalogProps) {
               />
               <div
                 ref={filterSheetRef}
-                className="absolute inset-x-0 bottom-0 max-h-[90vh] overflow-y-auto bg-background p-4 pb-[calc(16px+env(safe-area-inset-bottom))]"
+                className="absolute inset-x-0 bottom-0 flex max-h-[90vh] flex-col bg-background pb-[env(safe-area-inset-bottom)]"
                 role="dialog"
                 aria-modal="true"
                 aria-label={AppStrings.catalog.filters}
               >
-                <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center justify-between px-4 pt-4">
                   <p className="text-sm font-medium">{AppStrings.catalog.filters}</p>
                   <button
                     type="button"
@@ -526,7 +527,12 @@ export default function Catalog({ perfumes }: CatalogProps) {
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-                {renderFilters()}
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2">{renderFilters()}</div>
+                <div className="border-t border-stone-200 px-4 py-3">
+                  <Button fullWidth onClick={closeFilters}>
+                    {AppStrings.catalog.showResults} {aromaCountLabel(filtered.length)}
+                  </Button>
+                </div>
               </div>
             </div>
           ) : null}

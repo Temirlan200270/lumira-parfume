@@ -38,7 +38,9 @@ export default function CartDrawer() {
       />
       <aside
         ref={panelRef}
-        className="fixed inset-x-0 bottom-0 z-[70] flex h-[90vh] w-full flex-col bg-background md:inset-y-0 md:right-0 md:left-auto md:h-full md:w-[400px]"
+        className={`fixed inset-x-0 bottom-0 z-[70] flex w-full flex-col bg-background md:inset-y-0 md:right-0 md:left-auto md:h-full md:w-[400px] ${
+          items.length === 0 ? 'h-auto max-h-[90vh]' : 'h-[90vh]'
+        }`}
         style={{ boxShadow: '0 16px 48px #00000026' }}
         role="dialog"
         aria-modal="true"
@@ -67,7 +69,7 @@ export default function CartDrawer() {
           }
         >
           {items.length === 0 ? (
-            <div className="flex min-h-full flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+            <div className="flex flex-col items-center px-6 pt-12 pb-8 text-center">
               <ShoppingBag className="h-5 w-5 text-muted" strokeWidth={1.25} aria-hidden />
               <h3 className="mt-6 text-sm text-stone-900">{AppStrings.cart.empty}</h3>
               <p className="mt-2 max-w-[17.5rem] text-sm leading-relaxed text-muted">

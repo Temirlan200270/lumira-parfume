@@ -46,7 +46,7 @@ export default function ProductDetail({ perfume }: ProductDetailProps) {
   const meta = [genderLabel(perfume.gender), sectionLabel(perfume.section)].filter(Boolean)
 
   return (
-    <main className="flex-1 bg-background pb-24 lg:pb-0">
+    <main className="flex-1 bg-background pb-32 lg:pb-0">
       <div className="container-lumira section-y">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[58%_42%] lg:items-start">
           <div className="aspect-[3/4] overflow-hidden bg-paper lg:sticky lg:top-20">
@@ -150,11 +150,13 @@ export default function ProductDetail({ perfume }: ProductDetailProps) {
 
       <div
         className="fixed right-0 left-0 z-40 border-t border-stone-200 bg-background px-4 py-2 lg:hidden"
-        style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))' }}
+        style={{ bottom: 'calc(64px + env(safe-area-inset-bottom))' }}
       >
         <div className="flex items-center gap-3">
-          <p className="text-base tabular-nums text-stone-900">{formatTenge(totalPrice)}</p>
-          <Button fullWidth disabled={!inStock} onClick={add}>
+          <p className="shrink-0 whitespace-nowrap text-base tabular-nums text-stone-900">
+            {formatTenge(totalPrice)}
+          </p>
+          <Button className="min-w-0 flex-1" disabled={!inStock} onClick={add}>
             {inStock ? AppStrings.product.addToCart : AppStrings.product.outOfStock}
           </Button>
         </div>

@@ -104,6 +104,7 @@ export const AppStrings = {
     stockIn: 'В наличии',
     stockOut: 'Нет в наличии',
     popular: 'Часто ищут',
+    showResults: 'Показать',
   },
   nav: {
     catalog: 'Каталог',

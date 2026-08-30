@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {message ? (
         <div
           role="status"
-          className="fixed bottom-20 left-1/2 z-[90] max-w-[calc(100%-32px)] -translate-x-1/2 border border-stone-200 bg-background px-4 py-3 text-sm text-stone-900 md:bottom-8"
+          className="fixed top-20 left-1/2 z-[90] max-w-[calc(100%-32px)] -translate-x-1/2 border border-stone-200 bg-background px-4 py-3 text-sm text-stone-900 md:top-auto md:bottom-8"
         >
           {message}
         </div>
