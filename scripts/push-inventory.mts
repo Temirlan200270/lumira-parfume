@@ -98,6 +98,18 @@ for (const product of productRows) {
   }
 }
 
+const { error: hideOffersError } = await admin
+  .from('offers')
+  .update({ is_active: false, is_in_stock: false })
+  .not('id', 'is', null)
+if (hideOffersError) throw new Error(hideOffersError.message)
+
+const { error: hideProductsError } = await admin
+  .from('products')
+  .update({ is_active: false })
+  .not('id', 'is', null)
+if (hideProductsError) throw new Error(hideProductsError.message)
+
 const { error: productError } = await admin.from('products').upsert(productRows)
 if (productError) throw new Error(productError.message)
 

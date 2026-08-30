@@ -79,7 +79,7 @@ export const AppStrings = {
     leadAll: 'Разлив и оригинальный распив. Объём выбираете на карточке.',
     leadRazliv: '800 ₸ за 1 мл. 5, 10 или 20 мл.',
     leadRaspiv: 'Оригинал из фирменного флакона, не копия.',
-    searchPlaceholder: 'Поиск: название, бренд или нота',
+    searchPlaceholder: 'Поиск по названию',
     searchLabel: 'Поиск аромата',
     searchClear: 'Очистить поиск',
     searchClose: 'Закрыть поиск',
@@ -103,7 +103,6 @@ export const AppStrings = {
     stockAll: 'Все',
     stockIn: 'В наличии',
     stockOut: 'Нет в наличии',
-    originalChip: '100% оригинал',
     popular: 'Часто ищут',
   },
   nav: {

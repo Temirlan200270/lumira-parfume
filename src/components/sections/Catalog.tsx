@@ -1,13 +1,13 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Filter, Search, X } from 'lucide-react'
 import type { Perfume } from '@/lib/data'
 import ProductCard from '@/components/ui/ProductCard'
 import { CATALOG_SEARCH_ID } from '@/lib/constants'
-import { aromaCountLabel, perfumeHref } from '@/lib/labels'
+import { aromaCountLabel } from '@/lib/labels'
 import { POPULAR_QUERIES, rankPerfumes, searchSuggestions } from '@/lib/search'
 import { AppStrings } from '@/lib/strings'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -27,6 +27,16 @@ interface CatalogProps {
   perfumes: Perfume[]
 }
 
+const CatalogGrid = memo(function CatalogGrid({ perfumes }: { perfumes: Perfume[] }) {
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+      {perfumes.map((perfume) => (
+        <ProductCard key={perfume.id} perfume={perfume} />
+      ))}
+    </div>
+  )
+})
+
 function asSection(value: string | null): SectionFilter {
   if (value === 'razliv' || value === 'raspiv') return value
   return 'all'
@@ -43,7 +53,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
   useFocusTrap(filtersOpen, filterSheetRef, closeFilters)
 
   const activeSection = asSection(searchParams.get('format'))
-  const query = searchParams.get('q') ?? ''
+  const urlQuery = searchParams.get('q') ?? ''
   const selectedGender = (searchParams.get('gender') as Perfume['gender'] | 'all' | null) ?? 'all'
   const selectedBrand = searchParams.get('brand') ?? ''
   const stock = (searchParams.get('stock') as StockFilter | null) ?? 'all'
@@ -51,22 +61,71 @@ export default function Catalog({ perfumes }: CatalogProps) {
   const minPrice = searchParams.get('min') ?? ''
   const maxPrice = searchParams.get('max') ?? ''
 
-  const setParams = (patch: Record<string, string | null>) => {
-    const next = new URLSearchParams(searchParams.toString())
-    for (const [key, value] of Object.entries(patch)) {
-      if (!value) next.delete(key)
-      else next.set(key, value)
-    }
-    if (!('page' in patch)) next.delete('page')
-    const qs = next.toString()
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  const [query, setQuery] = useState(urlQuery)
+  const deferredQuery = useDeferredValue(query)
+  const searchParamsRef = useRef(searchParams)
+  searchParamsRef.current = searchParams
+
+  useEffect(() => {
+    setQuery(urlQuery)
+  }, [urlQuery])
+
+  const setParams = useCallback(
+    (patch: Record<string, string | null>) => {
+      const source =
+        typeof window !== 'undefined' ? window.location.search : searchParamsRef.current.toString()
+      const next = new URLSearchParams(source)
+      for (const [key, value] of Object.entries(patch)) {
+        if (!value) next.delete(key)
+        else next.set(key, value)
+      }
+      if (!('page' in patch)) next.delete('page')
+      const qs = next.toString()
+      const href = qs ? `${pathname}?${qs}` : pathname
+      const current =
+        typeof window !== 'undefined'
+          ? `${window.location.pathname}${window.location.search}`
+          : `${pathname}${searchParamsRef.current.toString() ? `?${searchParamsRef.current.toString()}` : ''}`
+      if (href === current) return
+      router.replace(href, { scroll: false })
+    },
+    [pathname, router]
+  )
+
+  const writeQueryToUrl = useCallback(
+    (value: string) => {
+      if (typeof window === 'undefined') return
+      const next = new URLSearchParams(window.location.search)
+      if (value) next.set('q', value)
+      else next.delete('q')
+      next.delete('page')
+      const qs = next.toString()
+      const href = qs ? `${pathname}?${qs}` : pathname
+      const current = `${window.location.pathname}${window.location.search}`
+      if (href === current) return
+      window.history.replaceState(window.history.state, '', href)
+    },
+    [pathname]
+  )
+
+  const commitQuery = useCallback(
+    (value: string) => {
+      setQuery(value)
+      setSearchFocused(false)
+      writeQueryToUrl(value)
+    },
+    [writeQueryToUrl]
+  )
+
+  const onSearchChange = (value: string) => {
+    setQuery(value)
   }
 
   const brands = useMemo(() => {
     return [...new Set(perfumes.map((perfume) => perfume.brand))].sort((a, b) => a.localeCompare(b, 'ru'))
   }, [perfumes])
 
-  const filtered = useMemo(() => {
+  const scoped = useMemo(() => {
     let result = [...perfumes]
     if (activeSection !== 'all') {
       result = result.filter((perfume) => perfume.section === activeSection)
@@ -91,24 +150,18 @@ export default function Catalog({ perfumes }: CatalogProps) {
     if (Number.isFinite(max) && maxPrice) {
       result = result.filter((perfume) => perfume.pricePerMl * 5 <= max)
     }
-    if (query.trim().length >= 2) {
-      result = rankPerfumes(result, query)
-    } else if (query.trim().length === 1) {
-      result = []
-    } else {
-      switch (sortBy) {
-        case 'price-asc':
-          result.sort((a, b) => a.pricePerMl - b.pricePerMl)
-          break
-        case 'price-desc':
-          result.sort((a, b) => b.pricePerMl - a.pricePerMl)
-          break
-        case 'name':
-          result.sort((a, b) => a.name.localeCompare(b.name, 'ru'))
-          break
-        default:
-          result.sort((a, b) => Number(b.isBestseller) - Number(a.isBestseller))
-      }
+    switch (sortBy) {
+      case 'price-asc':
+        result.sort((a, b) => a.pricePerMl - b.pricePerMl)
+        break
+      case 'price-desc':
+        result.sort((a, b) => b.pricePerMl - a.pricePerMl)
+        break
+      case 'name':
+        result.sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+        break
+      default:
+        result.sort((a, b) => Number(b.isBestseller) - Number(a.isBestseller))
     }
     return result
   }, [
@@ -119,13 +172,17 @@ export default function Catalog({ perfumes }: CatalogProps) {
     stock,
     minPrice,
     maxPrice,
-    query,
     sortBy,
   ])
 
+  const filtered = useMemo(() => {
+    if (deferredQuery.trim().length < 2) return scoped
+    return rankPerfumes(scoped, deferredQuery)
+  }, [scoped, deferredQuery])
+
   const suggestions = useMemo(
-    () => (query.trim().length >= 2 ? searchSuggestions(perfumes, query) : []),
-    [perfumes, query]
+    () => (query.trim().length >= 2 ? searchSuggestions(scoped, query) : []),
+    [scoped, query]
   )
 
   const title =
@@ -142,10 +199,10 @@ export default function Catalog({ perfumes }: CatalogProps) {
         ? AppStrings.catalog.leadRazliv
         : AppStrings.catalog.leadAll
 
-  const tabs: { id: SectionFilter; label: string; hint?: string }[] = [
+  const tabs: { id: SectionFilter; label: string }[] = [
     { id: 'all', label: AppStrings.catalog.tabAll },
     { id: 'razliv', label: AppStrings.catalog.razliv },
-    { id: 'raspiv', label: AppStrings.catalog.raspiv, hint: AppStrings.catalog.originalChip },
+    { id: 'raspiv', label: AppStrings.catalog.raspiv },
   ]
 
   const reset = () => {
@@ -265,22 +322,13 @@ export default function Catalog({ perfumes }: CatalogProps) {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setParams({ format: tab.id === 'all' ? null : tab.id })}
-                  className={`inline-flex h-11 shrink-0 items-center gap-2 px-4 text-xs uppercase tracking-[0.12em] ${
+                  className={`inline-flex h-11 shrink-0 items-center px-4 text-xs uppercase tracking-[0.12em] ${
                     active
                       ? 'bg-stone-900 text-stone-50'
                       : 'border border-stone-200 text-muted hover:border-stone-900 hover:text-stone-900'
                   }`}
                 >
                   {tab.label}
-                  {tab.hint ? (
-                    <span
-                      className={`rounded-[2px] px-1.5 py-0.5 text-xs font-normal normal-case tracking-normal ${
-                        active ? 'bg-white/15 text-stone-50/80' : 'bg-stone-100 text-muted'
-                      }`}
-                    >
-                      {tab.hint}
-                    </span>
-                  ) : null}
                 </button>
               )
             })}
@@ -290,7 +338,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
             className="relative min-w-0 flex-1"
             onSubmit={(event) => {
               event.preventDefault()
-              setParams({ q: query.trim() || null })
+              commitQuery(query.trim())
             }}
           >
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -301,17 +349,23 @@ export default function Catalog({ perfumes }: CatalogProps) {
             id={CATALOG_SEARCH_ID}
             type="text"
             value={query}
-            onChange={(event) => setParams({ q: event.target.value || null })}
+            onChange={(event) => onSearchChange(event.target.value)}
             onFocus={() => setSearchFocused(true)}
-            onBlur={() => window.setTimeout(() => setSearchFocused(false), 150)}
+            onBlur={(event) => {
+              window.setTimeout(() => setSearchFocused(false), 150)
+              writeQueryToUrl(event.currentTarget.value)
+            }}
             placeholder={AppStrings.catalog.searchPlaceholder}
             autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="search"
             className="h-11 w-full border border-stone-200 bg-background pl-10 pr-12 text-base text-stone-900 placeholder:text-muted md:text-sm"
           />
           {query ? (
             <button
               type="button"
-              onClick={() => setParams({ q: null })}
+              onClick={() => commitQuery('')}
               className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-muted hover:text-stone-900"
               aria-label={AppStrings.catalog.searchClear}
             >
@@ -325,10 +379,9 @@ export default function Catalog({ perfumes }: CatalogProps) {
                   key={perfume.id}
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => router.push(perfumeHref(perfume.slug, perfume.section))}
+                  onClick={() => commitQuery(perfume.name)}
                   className="w-full border-b border-stone-100 px-4 py-3 text-left last:border-b-0 hover:bg-stone-50"
                 >
-                  <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">{perfume.brand}</p>
                   <p className="text-sm text-stone-900">{perfume.name}</p>
                 </button>
               ))}
@@ -345,7 +398,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
                     key={item}
                     type="button"
                     onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => setParams({ q: item })}
+                    onClick={() => commitQuery(item)}
                     className="h-11 border border-stone-200 px-3 text-sm"
                   >
                     {item}
@@ -446,11 +499,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
             </div>
 
             {filtered.length > 0 ? (
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-                {filtered.map((perfume) => (
-                  <ProductCard key={perfume.id} perfume={perfume} />
-                ))}
-              </div>
+              <CatalogGrid perfumes={filtered} />
             ) : activeSection === 'raspiv' && !query.trim() ? (
               <div className="py-20">
                 <p className="text-sm text-stone-900">{AppStrings.catalog.emptyRaspiv}</p>

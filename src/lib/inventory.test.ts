@@ -5,27 +5,34 @@ import { inventory } from './inventory'
 import { perfumes } from './data'
 import { calculateOrder } from './order'
 
-test('inventory has 102 razliv and 3 raspiv items with unique offers', () => {
-  assert.equal(inventory.length, 105)
-  assert.equal(inventory.filter((item) => item.gender === 'female').length, 23)
-  assert.equal(inventory.filter((item) => item.gender === 'male').length, 38)
-  assert.equal(inventory.filter((item) => item.gender === 'unisex').length, 44)
-  assert.equal(inventory.filter((item) => item.hit).length, 4)
+test('inventory has 91 razliv and 3 raspiv items with unique offers', () => {
+  assert.equal(inventory.length, 94)
+  assert.equal(inventory.filter((item) => item.gender === 'female').length, 21)
+  assert.equal(inventory.filter((item) => item.gender === 'male').length, 30)
+  assert.equal(inventory.filter((item) => item.gender === 'unisex').length, 43)
+  assert.equal(inventory.filter((item) => item.hit).length, 3)
 
   const slugs = inventory.map((item) => productSlug(item.brand, item.name))
-  assert.equal(new Set(slugs).size, 104)
+  assert.equal(new Set(slugs).size, 93)
 
   const keys = inventory.map((item) => `${item.brand}::${item.name}::${item.section ?? 'razliv'}`)
   assert.equal(new Set(keys).size, keys.length)
 
-  assert.equal(perfumes.length, 105)
-  assert.equal(perfumes.filter((perfume) => perfume.section === 'razliv').length, 102)
+  assert.equal(perfumes.length, 94)
+  assert.equal(perfumes.filter((perfume) => perfume.section === 'razliv').length, 91)
   assert.equal(perfumes.filter((perfume) => perfume.section === 'raspiv').length, 3)
   assert.ok(perfumes.every((perfume) => perfume.isInStock !== false))
   assert.equal(
     perfumes.filter((perfume) => perfume.gender === 'female').length,
-    23
+    21
   )
+
+  const retiredBrands = ['Rabanne', 'Paco Rabanne', 'Tiziana Terenzi', 'Dolce&Gabbana']
+  assert.equal(inventory.filter((item) => retiredBrands.includes(item.brand)).length, 0)
+  assert.equal(inventory.filter((item) => item.brand === 'Dior' && item.name === 'Sauvage').length, 0)
+  assert.ok(inventory.some((item) => item.brand === 'Dior' && item.name === 'Sauvage Elixir'))
+  assert.equal(inventory.filter((item) => item.name === 'Allure Homme Sport').length, 0)
+  assert.equal(inventory.filter((item) => item.name === 'Eros Parfum').length, 0)
 
   const oud = perfumes.find((item) => item.name === 'No.12 Oud Douze')
   const cedrat = perfumes.find((item) => item.name === 'Cedrat Boise')

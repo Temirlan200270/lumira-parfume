@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import Link from 'next/link'
 import { Heart, ShoppingBag } from 'lucide-react'
 import {
@@ -23,7 +23,7 @@ interface ProductCardProps {
   index?: number
 }
 
-export default function ProductCard({ perfume }: ProductCardProps) {
+function ProductCard({ perfume }: ProductCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites()
   const { addItem } = useCart()
   const favorite = isFavorite(perfume.id)
@@ -125,3 +125,5 @@ export default function ProductCard({ perfume }: ProductCardProps) {
     </article>
   )
 }
+
+export default memo(ProductCard)

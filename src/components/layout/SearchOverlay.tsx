@@ -4,7 +4,6 @@ import { FormEvent, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { useSearchUi } from '@/components/layout/SearchProvider'
-import { perfumeHref } from '@/lib/labels'
 import { POPULAR_QUERIES, searchSuggestions } from '@/lib/search'
 import { AppStrings } from '@/lib/strings'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -50,6 +49,9 @@ export default function SearchOverlay() {
             onChange={(event) => setQuery(event.target.value)}
             placeholder={AppStrings.catalog.searchPlaceholder}
             autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            inputMode="search"
             autoFocus
             className="h-11 w-full border border-stone-200 bg-background pl-10 pr-12 text-base text-stone-900 placeholder:text-muted md:text-sm"
           />
@@ -93,15 +95,8 @@ export default function SearchOverlay() {
                   <button
                     type="button"
                     className="flex h-auto w-full flex-col items-start py-3 text-left"
-                    onClick={() => {
-                      closeSearch()
-                      setQuery('')
-                      router.push(perfumeHref(perfume.slug, perfume.section))
-                    }}
+                    onClick={() => goCatalog(perfume.name)}
                   >
-                    <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted">
-                      {perfume.brand}
-                    </span>
                     <span className="text-sm text-stone-900">{perfume.name}</span>
                   </button>
                 </li>

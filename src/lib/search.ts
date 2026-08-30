@@ -72,6 +72,13 @@ export function searchScore(perfume: Perfume, query: string): number {
   const q = normalizeSearch(query)
   if (q.length < 2) return 0
 
+  const words = q.split(/\s+/).filter(Boolean)
+  if (words.length > 1) {
+    const scores = words.map((word) => searchScore(perfume, word))
+    if (scores.some((score) => score === 0)) return 0
+    return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+  }
+
   const names = variants(perfume.name)
   const brands = variants(perfume.brand)
   const notes = variants(

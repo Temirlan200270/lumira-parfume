@@ -11,12 +11,7 @@ export default function FormatTiles() {
           <p className="mt-6 text-base tabular-nums text-stone-900">{AppStrings.home.razlivPrice}</p>
         </Link>
         <Link href="/?format=raspiv" className="border border-stone-200 p-8 hover:border-stone-900">
-          <div className="flex items-start justify-between gap-4">
-            <h2 className="text-[28px] font-light text-stone-900">{AppStrings.home.raspivTitle}</h2>
-            <span className="border border-stone-200 px-2 py-1 text-xs uppercase tracking-[0.12em]">
-              100% оригинал
-            </span>
-          </div>
+          <h2 className="text-[28px] font-light text-stone-900">{AppStrings.home.raspivTitle}</h2>
           <p className="mt-3 text-sm leading-[22px] text-muted">{AppStrings.home.raspivLead}</p>
         </Link>
       </div>
