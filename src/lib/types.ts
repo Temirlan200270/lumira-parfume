@@ -75,6 +75,7 @@ export interface OrderPayload {
   customerName: string
   phone: string
   city?: string
+  acceptedLegal: boolean
   items: OrderRequestItem[]
 }
 
@@ -106,3 +107,4 @@ export type OrderErrorCode =
   | 'invalid_quantity'
   | 'offer_unavailable'
   | 'offer_out_of_stock'
+  | 'legal_not_accepted'

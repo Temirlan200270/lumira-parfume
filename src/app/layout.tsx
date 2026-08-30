@@ -13,6 +13,7 @@ import CartDrawer from '@/components/cart/CartDrawer'
 import StoreFrame from '@/components/layout/StoreFrame'
 import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import { getCatalog } from '@/lib/catalog'
+import { getSiteUrl } from '@/lib/env'
 import './globals.css'
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +30,10 @@ const playfair = Playfair_Display({
   style: 'italic',
 })
 
+const siteUrl = getSiteUrl()
+
 export const metadata: Metadata = {
+  ...(siteUrl ? { metadataBase: new URL(siteUrl) } : {}),
   title: 'Lumira Parfume | Оригинальная парфюмерия по миллилитру',
   description: 'Разлив и распив. 5, 10 или 20 мл. Заказ в WhatsApp, оплата Kaspi.',
 }

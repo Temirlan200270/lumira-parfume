@@ -149,6 +149,10 @@ export function validateOrderPayload(input: unknown): OrderResult<OrderPayload> 
     })
   }
 
+  if (body.acceptedLegal !== true) {
+    return fail('legal_not_accepted', 'Нужно согласие с офертой и политикой конфиденциальности')
+  }
+
   return {
     ok: true,
     value: {
@@ -156,6 +160,7 @@ export function validateOrderPayload(input: unknown): OrderResult<OrderPayload> 
       customerName,
       phone,
       city,
+      acceptedLegal: true,
       items,
     },
   }

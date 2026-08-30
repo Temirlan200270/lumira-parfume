@@ -1,3 +1,20 @@
+export function getSiteUrl(): string | null {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  if (explicit) return explicit.replace(/\/$/, '')
+
+  const production = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim()
+  if (production) {
+    return production.startsWith('http') ? production.replace(/\/$/, '') : `https://${production}`
+  }
+
+  const vercel = process.env.VERCEL_URL?.trim()
+  if (vercel) {
+    return vercel.startsWith('http') ? vercel.replace(/\/$/, '') : `https://${vercel}`
+  }
+
+  return null
+}
+
 export function getPublicSupabaseEnv(): { url: string; publishableKey: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY

@@ -9,6 +9,7 @@ interface ProductPhotoProps {
   name: string
   faded?: boolean
   className?: string
+  priority?: boolean
 }
 
 export default function ProductPhoto({
@@ -17,6 +18,7 @@ export default function ProductPhoto({
   name,
   faded = false,
   className = '',
+  priority = false,
 }: ProductPhotoProps) {
   const [failed, setFailed] = useState(false)
   const showImage = isRenderableProductImage(src) && !failed
@@ -36,6 +38,9 @@ export default function ProductPhoto({
     <img
       src={src}
       alt={alt}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding="async"
+      fetchPriority={priority ? 'high' : 'auto'}
       onError={() => setFailed(true)}
       className={`h-full w-full object-cover transition-transform duration-700 ease-out ${faded ? 'opacity-50' : ''} ${className}`}
     />

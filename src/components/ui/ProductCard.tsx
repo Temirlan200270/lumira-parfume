@@ -23,7 +23,7 @@ interface ProductCardProps {
   index?: number
 }
 
-function ProductCard({ perfume }: ProductCardProps) {
+function ProductCard({ perfume, index = Number.POSITIVE_INFINITY }: ProductCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites()
   const { addItem } = useCart()
   const favorite = isFavorite(perfume.id)
@@ -51,6 +51,7 @@ function ProductCard({ perfume }: ProductCardProps) {
               alt={`${perfume.brand} ${perfume.name}, флакон`}
               name={perfume.name}
               faded={!inStock}
+              priority={index < 8}
             />
           </div>
         </Link>

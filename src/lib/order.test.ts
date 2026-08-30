@@ -37,11 +37,12 @@ test('normalizePhone accepts KZ formats', () => {
   assert.equal(normalizePhone('123'), null)
 })
 
-test('validateOrderPayload rejects empty cart and bad phone', () => {
+test('validateOrderPayload rejects empty cart, bad phone and missing legal consent', () => {
   const empty = validateOrderPayload({
     clientRequestId: '33333333-3333-4333-8333-333333333333',
     customerName: 'Алия',
     phone: '+77479192766',
+    acceptedLegal: true,
     items: [],
   })
   assert.equal(empty.ok, false)
@@ -51,6 +52,7 @@ test('validateOrderPayload rejects empty cart and bad phone', () => {
     clientRequestId: '33333333-3333-4333-8333-333333333333',
     customerName: 'Алия',
     phone: '00',
+    acceptedLegal: true,
     items: [
       {
         offerId: offer.id,
@@ -61,6 +63,21 @@ test('validateOrderPayload rejects empty cart and bad phone', () => {
   })
   assert.equal(badPhone.ok, false)
   if (!badPhone.ok) assert.equal(badPhone.error.code, 'invalid_phone')
+
+  const noConsent = validateOrderPayload({
+    clientRequestId: '33333333-3333-4333-8333-333333333333',
+    customerName: 'Алия',
+    phone: '+77479192766',
+    items: [
+      {
+        offerId: offer.id,
+        volumeMl: 5,
+        quantity: 1,
+      },
+    ],
+  })
+  assert.equal(noConsent.ok, false)
+  if (!noConsent.ok) assert.equal(noConsent.error.code, 'legal_not_accepted')
 })
 
 test('calculateOrder uses server prices and ignores client amounts', () => {

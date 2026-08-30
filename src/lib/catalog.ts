@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { DEFAULT_VOLUME_ML, priceForVolume, type Perfume } from '@/lib/data'
 import { getPublicSupabaseEnv } from '@/lib/env'
 import { logger } from '@/lib/logger'
@@ -87,7 +88,7 @@ export interface CatalogResult {
   error: boolean
 }
 
-export async function getCatalogResult(): Promise<CatalogResult> {
+export const getCatalogResult = cache(async function getCatalogResult(): Promise<CatalogResult> {
   if (!getPublicSupabaseEnv()) {
     return { perfumes: [], error: true }
   }
@@ -97,10 +98,12 @@ export async function getCatalogResult(): Promise<CatalogResult> {
     const [{ data: products, error: productsError }, { data: offers, error: offersError }] = await Promise.all([
       supabase
         .from('products')
-        .select('id, slug, brand, name, description, gender, notes, image_url, is_active'),
+        .select('id, slug, brand, name, description, gender, notes, image_url, is_active')
+        .eq('is_active', true),
       supabase
         .from('offers')
-        .select('id, product_id, section, price_per_ml_tenge, is_original, is_in_stock, is_active'),
+        .select('id, product_id, section, price_per_ml_tenge, is_original, is_in_stock, is_active')
+        .eq('is_active', true),
     ])
 
     if (productsError || offersError) {
@@ -123,7 +126,7 @@ export async function getCatalogResult(): Promise<CatalogResult> {
     })
     return { perfumes: [], error: true }
   }
-}
+})
 
 export async function getCatalog(): Promise<Perfume[]> {
   const result = await getCatalogResult()

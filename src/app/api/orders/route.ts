@@ -189,6 +189,8 @@ export async function POST(request: Request) {
       status: 'new',
       client_request_id: payload.clientRequestId,
       telegram_sent: false,
+      legal_accepted_at: new Date().toISOString(),
+      city: payload.city ?? null,
     })
     .select('id, order_number, customer_name, items, total_tenge')
     .single()

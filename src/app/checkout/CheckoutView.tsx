@@ -164,6 +164,7 @@ export default function CheckoutView() {
           customerName: name,
           phone,
           city: city.trim(),
+          acceptedLegal: true,
           items: items.map((item) => ({
             offerId: item.offerId,
             volumeMl: item.volumeMl,
@@ -251,7 +252,7 @@ export default function CheckoutView() {
                 className="mt-1 h-5 w-5 rounded-[2px] border-stone-300"
               />
               <span>
-                Согласен с{' '}
+                {AppStrings.checkout.offerPrefix}{' '}
                 <Link href="/legal/oferta" className="underline">
                   {AppStrings.checkout.oferta}
                 </Link>{' '}
@@ -259,6 +260,7 @@ export default function CheckoutView() {
                 <Link href="/legal/privacy" className="underline">
                   {AppStrings.checkout.privacy}
                 </Link>
+                .
               </span>
             </label>
             {errors.offer ? <p className="text-sm text-error">{errors.offer}</p> : null}

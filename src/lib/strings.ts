@@ -34,7 +34,8 @@ export const AppStrings = {
     paymentValue: 'Kaspi после подтверждения заказа',
     paymentHint: 'Счёт пришлём в WhatsApp после сверки состава.',
     offer: 'Согласен с офертой и политикой конфиденциальности',
-    oferta: 'офертой',
+    offerPrefix: 'Я согласен с условиями',
+    oferta: 'публичной оферты',
     privacy: 'политикой конфиденциальности',
     submit: 'Отправить заказ',
     submitting: 'Отправляем…',
@@ -97,6 +98,7 @@ export const AppStrings = {
     sortName: 'По названию',
     gender: 'Пол',
     brand: 'Бренд',
+    allBrands: 'Все бренды',
     family: 'Семейство',
     price: 'Цена за 5 мл',
     stock: 'Наличие',
@@ -167,8 +169,9 @@ export const AppStrings = {
   },
   legal: {
     ofertaTitle: 'Публичная оферта',
+    ofertaPreparing: 'Публичная оферта находится в процессе подготовки.',
     privacyTitle: 'Политика конфиденциальности',
-    stub: 'Текст будет добавлен.',
+    privacyUpdated: 'Обновлено 31 августа 2026 года.',
   },
   favorites: {
     title: 'Избранное',

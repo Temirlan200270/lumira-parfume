@@ -1,11 +1,11 @@
 'use client'
 
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { Filter, Search, X } from 'lucide-react'
 import type { Perfume } from '@/lib/data'
 import ProductCard from '@/components/ui/ProductCard'
+import { applyCatalogFilters, hasNarrowingFilters } from '@/lib/catalog-filter'
 import { CATALOG_SEARCH_ID } from '@/lib/constants'
 import { aromaCountLabel } from '@/lib/labels'
 import { POPULAR_QUERIES, rankPerfumes, searchSuggestions } from '@/lib/search'
@@ -30,21 +30,59 @@ interface CatalogProps {
 const CatalogGrid = memo(function CatalogGrid({ perfumes }: { perfumes: Perfume[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-      {perfumes.map((perfume) => (
-        <ProductCard key={perfume.id} perfume={perfume} />
+      {perfumes.map((perfume, index) => (
+        <ProductCard key={perfume.id} perfume={perfume} index={index} />
       ))}
     </div>
   )
 })
+
+function SortSelect({
+  value,
+  className,
+  onChange,
+}: {
+  value: SortKey
+  className: string
+  onChange: (value: string | null) => void
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value === 'popular' ? null : event.target.value)}
+      aria-label={AppStrings.catalog.sort}
+      className={className}
+    >
+      <option value="popular">{AppStrings.catalog.sortPopular}</option>
+      <option value="price-asc">{AppStrings.catalog.sortPriceAsc}</option>
+      <option value="price-desc">{AppStrings.catalog.sortPriceDesc}</option>
+      <option value="name">{AppStrings.catalog.sortName}</option>
+    </select>
+  )
+}
 
 function asSection(value: string | null): SectionFilter {
   if (value === 'razliv' || value === 'raspiv') return value
   return 'all'
 }
 
+function asGender(value: string | null): Perfume['gender'] | 'all' {
+  if (value === 'male' || value === 'female' || value === 'unisex') return value
+  return 'all'
+}
+
+function asStock(value: string | null): StockFilter {
+  if (value === 'in' || value === 'out') return value
+  return 'all'
+}
+
+function asSort(value: string | null): SortKey {
+  if (value === 'price-asc' || value === 'price-desc' || value === 'name') return value
+  return 'popular'
+}
+
 export default function Catalog({ perfumes }: CatalogProps) {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const pathname = usePathname()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
@@ -52,44 +90,60 @@ export default function Catalog({ perfumes }: CatalogProps) {
   const closeFilters = useCallback(() => setFiltersOpen(false), [])
   useFocusTrap(filtersOpen, filterSheetRef, closeFilters)
 
-  const activeSection = asSection(searchParams.get('format'))
+  const urlSection = asSection(searchParams.get('format'))
   const urlQuery = searchParams.get('q') ?? ''
-  const selectedGender = (searchParams.get('gender') as Perfume['gender'] | 'all' | null) ?? 'all'
-  const selectedBrand = searchParams.get('brand') ?? ''
-  const stock = (searchParams.get('stock') as StockFilter | null) ?? 'all'
-  const sortBy = (searchParams.get('sort') as SortKey | null) ?? 'popular'
+  const urlGender = asGender(searchParams.get('gender'))
+  const urlBrand = searchParams.get('brand') ?? ''
+  const urlStock = asStock(searchParams.get('stock'))
+  const urlSort = asSort(searchParams.get('sort'))
   const urlMinPrice = searchParams.get('min') ?? ''
   const urlMaxPrice = searchParams.get('max') ?? ''
 
+  const [activeSection, setActiveSection] = useState(urlSection)
   const [query, setQuery] = useState(urlQuery)
+  const [selectedGender, setSelectedGender] = useState(urlGender)
+  const [selectedBrand, setSelectedBrand] = useState(urlBrand)
+  const [stock, setStock] = useState(urlStock)
+  const [sortBy, setSortBy] = useState(urlSort)
   const [minPrice, setMinPrice] = useState(urlMinPrice)
   const [maxPrice, setMaxPrice] = useState(urlMaxPrice)
   const deferredQuery = useDeferredValue(query)
   const deferredMinPrice = useDeferredValue(minPrice)
   const deferredMaxPrice = useDeferredValue(maxPrice)
-  const searchParamsRef = useRef(searchParams)
+  const queryRef = useRef(query)
   const minPriceRef = useRef(minPrice)
   const maxPriceRef = useRef(maxPrice)
-  searchParamsRef.current = searchParams
+  queryRef.current = query
   minPriceRef.current = minPrice
   maxPriceRef.current = maxPrice
 
   useEffect(() => {
+    setActiveSection(urlSection)
     setQuery(urlQuery)
-  }, [urlQuery])
-
-  useEffect(() => {
+    setSelectedGender(urlGender)
+    setSelectedBrand(urlBrand)
+    setStock(urlStock)
+    setSortBy(urlSort)
     setMinPrice(urlMinPrice)
-  }, [urlMinPrice])
-
-  useEffect(() => {
     setMaxPrice(urlMaxPrice)
-  }, [urlMaxPrice])
+  }, [urlSection, urlQuery, urlGender, urlBrand, urlStock, urlSort, urlMinPrice, urlMaxPrice])
 
   const writeSearchToUrl = useCallback(
     (patch: Record<string, string | null>) => {
       if (typeof window === 'undefined') return
       const next = new URLSearchParams(window.location.search)
+      if (!('q' in patch)) {
+        if (queryRef.current) next.set('q', queryRef.current)
+        else next.delete('q')
+      }
+      if (!('min' in patch)) {
+        if (minPriceRef.current) next.set('min', minPriceRef.current)
+        else next.delete('min')
+      }
+      if (!('max' in patch)) {
+        if (maxPriceRef.current) next.set('max', maxPriceRef.current)
+        else next.delete('max')
+      }
       for (const [key, value] of Object.entries(patch)) {
         if (!value) next.delete(key)
         else next.set(key, value)
@@ -106,32 +160,14 @@ export default function Catalog({ perfumes }: CatalogProps) {
 
   const setParams = useCallback(
     (patch: Record<string, string | null>) => {
-      const source =
-        typeof window !== 'undefined' ? window.location.search : searchParamsRef.current.toString()
-      const next = new URLSearchParams(source)
-      if (!('min' in patch)) {
-        if (minPriceRef.current) next.set('min', minPriceRef.current)
-        else next.delete('min')
-      }
-      if (!('max' in patch)) {
-        if (maxPriceRef.current) next.set('max', maxPriceRef.current)
-        else next.delete('max')
-      }
-      for (const [key, value] of Object.entries(patch)) {
-        if (!value) next.delete(key)
-        else next.set(key, value)
-      }
-      if (!('page' in patch)) next.delete('page')
-      const qs = next.toString()
-      const href = qs ? `${pathname}?${qs}` : pathname
-      const current =
-        typeof window !== 'undefined'
-          ? `${window.location.pathname}${window.location.search}`
-          : `${pathname}${searchParamsRef.current.toString() ? `?${searchParamsRef.current.toString()}` : ''}`
-      if (href === current) return
-      router.replace(href, { scroll: false })
+      if ('format' in patch) setActiveSection(asSection(patch.format))
+      if ('gender' in patch) setSelectedGender(asGender(patch.gender))
+      if ('brand' in patch) setSelectedBrand(patch.brand ?? '')
+      if ('stock' in patch) setStock(asStock(patch.stock))
+      if ('sort' in patch) setSortBy(asSort(patch.sort))
+      writeSearchToUrl(patch)
     },
-    [pathname, router]
+    [writeSearchToUrl]
   )
 
   const writeQueryToUrl = useCallback(
@@ -165,55 +201,28 @@ export default function Catalog({ perfumes }: CatalogProps) {
     return [...new Set(perfumes.map((perfume) => perfume.brand))].sort((a, b) => a.localeCompare(b, 'ru'))
   }, [perfumes])
 
-  const scoped = useMemo(() => {
-    let result = [...perfumes]
-    if (activeSection !== 'all') {
-      result = result.filter((perfume) => perfume.section === activeSection)
-    }
-    if (selectedGender !== 'all') {
-      result = result.filter((perfume) => perfume.gender === selectedGender)
-    }
-    if (selectedBrand) {
-      result = result.filter((perfume) => perfume.brand === selectedBrand)
-    }
-    if (stock === 'in') {
-      result = result.filter((perfume) => perfume.isInStock !== false)
-    }
-    if (stock === 'out') {
-      result = result.filter((perfume) => perfume.isInStock === false)
-    }
-    const min = Number(deferredMinPrice)
-    const max = Number(deferredMaxPrice)
-    if (Number.isFinite(min) && deferredMinPrice) {
-      result = result.filter((perfume) => perfume.pricePerMl * 5 >= min)
-    }
-    if (Number.isFinite(max) && deferredMaxPrice) {
-      result = result.filter((perfume) => perfume.pricePerMl * 5 <= max)
-    }
-    switch (sortBy) {
-      case 'price-asc':
-        result.sort((a, b) => a.pricePerMl - b.pricePerMl)
-        break
-      case 'price-desc':
-        result.sort((a, b) => b.pricePerMl - a.pricePerMl)
-        break
-      case 'name':
-        result.sort((a, b) => a.name.localeCompare(b.name, 'ru'))
-        break
-      default:
-        result.sort((a, b) => Number(b.isBestseller) - Number(a.isBestseller))
-    }
-    return result
-  }, [
-    perfumes,
-    activeSection,
-    selectedGender,
-    selectedBrand,
-    stock,
-    deferredMinPrice,
-    deferredMaxPrice,
-    sortBy,
-  ])
+  const scoped = useMemo(
+    () =>
+      applyCatalogFilters(perfumes, {
+        section: activeSection,
+        gender: selectedGender,
+        brand: selectedBrand,
+        stock,
+        minPrice: deferredMinPrice,
+        maxPrice: deferredMaxPrice,
+        sortBy,
+      }),
+    [
+      perfumes,
+      activeSection,
+      selectedGender,
+      selectedBrand,
+      stock,
+      deferredMinPrice,
+      deferredMaxPrice,
+      sortBy,
+    ]
+  )
 
   const filtered = useMemo(() => {
     if (deferredQuery.trim().length < 2) return scoped
@@ -249,10 +258,17 @@ export default function Catalog({ perfumes }: CatalogProps) {
     setQuery('')
     setMinPrice('')
     setMaxPrice('')
-    router.replace(pathname, { scroll: false })
+    setActiveSection('all')
+    setSelectedGender('all')
+    setSelectedBrand('')
+    setStock('all')
+    setSortBy('popular')
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(window.history.state, '', pathname)
+    }
   }
 
-  const filters = (
+  const renderFilters = () => (
     <div className="space-y-4">
       <fieldset>
         <legend className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
@@ -284,7 +300,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
           onChange={(event) => setParams({ brand: event.target.value || null })}
           className="h-10 w-full rounded-[2px] border border-stone-200 bg-background px-3 text-sm"
         >
-          <option value="">Все бренды</option>
+          <option value="">{AppStrings.catalog.allBrands}</option>
           {brands.map((brand) => (
             <option key={brand} value={brand}>
               {brand}
@@ -476,17 +492,11 @@ export default function Catalog({ perfumes }: CatalogProps) {
                 <Filter className="h-4 w-4" />
                 {AppStrings.catalog.filters}
               </button>
-              <select
+              <SortSelect
                 value={sortBy}
-                onChange={(event) => setParams({ sort: event.target.value === 'popular' ? null : event.target.value })}
-                aria-label={AppStrings.catalog.sort}
+                onChange={(value) => setParams({ sort: value })}
                 className="h-11 flex-1 rounded-[2px] border border-stone-200 bg-background px-3 text-sm"
-              >
-                <option value="popular">{AppStrings.catalog.sortPopular}</option>
-                <option value="price-asc">{AppStrings.catalog.sortPriceAsc}</option>
-                <option value="price-desc">{AppStrings.catalog.sortPriceDesc}</option>
-                <option value="name">{AppStrings.catalog.sortName}</option>
-              </select>
+              />
             </div>
           </div>
 
@@ -516,7 +526,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
                     <X className="h-4 w-4" />
                   </button>
                 </div>
-                {filters}
+                {renderFilters()}
               </div>
             </div>
           ) : null}
@@ -526,38 +536,41 @@ export default function Catalog({ perfumes }: CatalogProps) {
               <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">
                 {AppStrings.catalog.filters}
               </p>
-              {filters}
+              {renderFilters()}
             </div>
           </aside>
 
           <div className="min-w-0 flex-1">
             <div className="mb-4 flex items-center justify-between gap-3">
               <p className="text-sm text-muted">{aromaCountLabel(filtered.length)}</p>
-              <select
+              <SortSelect
                 value={sortBy}
-                onChange={(event) => setParams({ sort: event.target.value === 'popular' ? null : event.target.value })}
-                aria-label={AppStrings.catalog.sort}
+                onChange={(value) => setParams({ sort: value })}
                 className="hidden h-10 w-52 rounded-[2px] border border-stone-200 bg-background px-3 text-sm lg:block"
-              >
-                <option value="popular">{AppStrings.catalog.sortPopular}</option>
-                <option value="price-asc">{AppStrings.catalog.sortPriceAsc}</option>
-                <option value="price-desc">{AppStrings.catalog.sortPriceDesc}</option>
-                <option value="name">{AppStrings.catalog.sortName}</option>
-              </select>
+              />
             </div>
 
             {filtered.length > 0 ? (
               <CatalogGrid perfumes={filtered} />
-            ) : activeSection === 'raspiv' && !query.trim() ? (
+            ) : activeSection === 'raspiv' &&
+              !hasNarrowingFilters({
+                gender: selectedGender,
+                brand: selectedBrand,
+                stock,
+                minPrice,
+                maxPrice,
+                query,
+              }) ? (
               <div className="py-20">
                 <p className="text-sm text-stone-900">{AppStrings.catalog.emptyRaspiv}</p>
                 <p className="mt-2 text-sm text-muted">{AppStrings.catalog.emptyRaspivLead}</p>
-                <Link
-                  href="/?format=razliv"
+                <button
+                  type="button"
+                  onClick={() => setParams({ format: 'razliv' })}
                   className="mt-6 inline-flex h-11 items-center text-sm text-stone-900 underline"
                 >
                   {AppStrings.catalog.emptyRaspivCta}
-                </Link>
+                </button>
               </div>
             ) : (
               <div className="py-20 text-center">
