@@ -11,7 +11,6 @@ import { ToastProvider } from '@/components/ui/Toast'
 import { CartProvider } from '@/components/cart/CartProvider'
 import CartDrawer from '@/components/cart/CartDrawer'
 import StoreFrame from '@/components/layout/StoreFrame'
-import { ThemeProvider } from '@/components/layout/ThemeProvider'
 import { getCatalog } from '@/lib/catalog'
 import { getSiteUrl } from '@/lib/env'
 import './globals.css'
@@ -51,10 +50,9 @@ export default async function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{if(localStorage.getItem('lumira-theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}})();",
+              "(function(){try{document.documentElement.classList.remove('dark');localStorage.removeItem('lumira-theme')}catch(e){}})();",
           }}
         />
-        <ThemeProvider>
         <ToastProvider>
           <FavoritesProvider>
             <CartProvider>
@@ -70,7 +68,6 @@ export default async function RootLayout({
             </CartProvider>
           </FavoritesProvider>
         </ToastProvider>
-        </ThemeProvider>
       </body>
     </html>
   )
