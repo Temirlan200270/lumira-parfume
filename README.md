@@ -60,7 +60,11 @@ npm run dev
 </tr>
 <tr>
 <td><code>npm test</code></td>
-<td>Заказы, ассортимент, поиск, фильтры каталога</td>
+<td>Заказы, ассортимент, поиск, фильтры, подписи админки</td>
+</tr>
+<tr>
+<td><code>npm run seed:sql</code></td>
+<td>Пересобирает SQL-миграцию каталога из <code>inventory.ts</code></td>
 </tr>
 <tr>
 <td><code>npm run seed:push</code></td>
@@ -78,11 +82,13 @@ npm run dev
 
 ## Каталог
 
-Источник правды для состава витрины:
+Пакетный состав для сида:
 
 ```text
 src/lib/inventory.ts
 ```
+
+Живая витрина читается из Supabase. Стойка может менять офферы в админке без правки файла.
 
 После изменения ассортимента:
 
@@ -93,7 +99,11 @@ npm run seed:push
 
 `seed:push` выключает все products/offers, затем upsert из `inventory.ts`. Снятую позицию лучше затем удалить из базы, иначе она останется скрытой строкой.
 
+Позиции, заведённые **только в админке**, в `inventory.ts` не попадают. Повторный `seed:push` их выключит, пока строку не добавят в файл. Подробнее: [docs/ADMIN.md](docs/ADMIN.md), [docs/DATA.md](docs/DATA.md).
+
 На витрине считаются **карточки (офферы)**. Один аромат в разливе и распиве — две карточки.
+
+В сетке каталога — фото, формат, цена и объём 5/10/20. **В корзину** только на странице аромата (`/perfume/[slug]`).
 
 Поиск: название, бренд, ноты. В подсказках только название. Клик по подсказке фильтрует сетку, не открывает PDP.
 
@@ -110,8 +120,9 @@ src/
 │   ├── layout/
 │   └── sections/
 ├── lib/
-│   ├── inventory.ts     # состав витрины
+│   ├── inventory.ts     # пакетный состав для seed
 │   ├── catalog.ts       # чтение живого каталога из Supabase
+│   ├── admin.ts         # статусы и время заказов в админке
 │   ├── catalog-filter.ts
 │   ├── search.ts
 │   └── ...
@@ -166,10 +177,10 @@ src/
 
 `/catalog` редиректит на `/` с сохранением query-параметров.
 
-Доступ к `/admin` ограничен аккаунтами из `ADMIN_EMAILS`.
+Доступ к `/admin` ограничен аккаунтами из `ADMIN_EMAILS`. Что умеет стойка: [docs/ADMIN.md](docs/ADMIN.md). Что ещё не доделано: [docs/BACKLOG.md](docs/BACKLOG.md).
 
 ## Документация
 
-Оглавление: [docs/INDEX.md](docs/INDEX.md).
+Оглавление: [docs/INDEX.md](docs/INDEX.md). Админка: [docs/ADMIN.md](docs/ADMIN.md). Недоделки: [docs/BACKLOG.md](docs/BACKLOG.md).
 
 Код — источник истины о текущем устройстве. [docs/Lumira-Target-State.md](docs/Lumira-Target-State.md) — целевой UX, не снимок файлов.

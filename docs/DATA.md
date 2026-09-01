@@ -2,13 +2,15 @@
 
 ## Ассортимент
 
-Источник состава витрины: `src/lib/inventory.ts`.
+Пакетный состав витрины: `src/lib/inventory.ts`.
 
 Тип строки — `InventoryItem`: бренд, название, пол, опционально `hit`, `section` (`razliv` | `raspiv`), `pricePerMl`, `tags`, `image`.
 
 Разлив без своей цены получает `800 ₸` за 1 мл (`RAZLIV_PRICE_PER_ML` в `data.ts`). Распив задаёт свою цену за мл.
 
 `src/lib/data.ts` собирает локальный массив `perfumes` из inventory — для тестов и seed. Живая витрина идёт из Supabase (`src/lib/catalog.ts` → `toPerfumeCard`).
+
+Админка пишет в те же таблицы `products` / `offers` (и Storage). Это второй источник. `npm run seed:push` не мержит его с inventory, а выключает всё лишнее. Новую позицию со стойки после стабилизации лучше занести в `inventory.ts`.
 
 Не храните в доках полный список SKU: он меняется. Смотрите inventory и тесты `src/lib/inventory.test.ts`.
 
@@ -25,19 +27,27 @@
 - `isBestseller`, `isNew`, `isInStock`, `isOriginal`
 - `notes`, `tags`, `description` — если заполнены в notes/display продукта
 
+На карточке сетки `isBestseller` / «хит» не рисуется. `isNew` — бейдж, если выставлен в данных.
+
 Один product может иметь два offer (как Red Tobacco).
 
 ## Заказ
 
-`OrderPayload`: `clientRequestId`, `customerName`, `phone`, `acceptedLegal`, `items[]` (`offerId`, `volumeMl` 5|10|20, `quantity`).
+`OrderPayload` с сайта: `clientRequestId`, `customerName`, `phone`, `acceptedLegal`, `items[]` (`offerId`, `volumeMl` 5|10|20, `quantity`).
 
 В `orders`:
 
+- `order_number` (`LM-` + 8 символов id)
 - `customer_name`, `phone_e164`
 - `items` (jsonb, серверные цены)
-- `total_tenge`, `status`
-- `legal_accepted_at` — факт согласия
+- `total_tenge`, `status` (`new` | `confirmed` | `paid` | `completed` | `cancelled`)
+- `client_request_id`
+- `legal_accepted_at`
 - `telegram_sent`
+
+Колонка `city` в миграции есть, форма её не шлёт.
+
+Админский заказ: тот же снимок состава, `telegram_sent: true` без отправки в бот, согласие проставляется датой создания.
 
 ## Клиентское хранилище
 
@@ -45,7 +55,7 @@
 |------|-----|
 | `lumira-cart` | корзина |
 | `lumira-favorites` | избранное |
-| `lumira-compare` | сравнение (код есть, на витрине не ведущее) |
+| `lumira-compare` | сравнение (ключ пишется, экрана нет) |
 
 Старые ключи `essence-*` при чтении мигрируются.
 

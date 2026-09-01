@@ -8,32 +8,39 @@ Next.js 16 App Router. Главная и PDP — `force-dynamic`: каталог
 RootLayout
 ├── html (ru)
 ├── body (min-h-screen)
-│   ├── script        # сбрасывает старый lumira-theme, если он ещё в localStorage
+│   ├── script          # сбрасывает старый lumira-theme из localStorage
 │   ├── ToastProvider
 │   ├── FavoritesProvider
 │   ├── CartProvider
-│   └── SearchProvider (каталог для оверлея поиска)
-│       └── оболочка: flex min-h-screen flex-col
-│           ├── Navbar          # fixed, вне потока
-│           ├── StoreFrame      # flex-1: отступы + растягивает коротко страницы
-│           │   └── {children}
-│           ├── CartDrawer
-│           ├── SearchOverlay
-│           ├── BottomNav       # mobile, кроме /checkout и /admin
-│           ├── grain-overlay
-│           └── Footer          # внизу viewport, если контента мало; не position:sticky
+│   └── SearchProvider
+│       └── flex min-h-screen flex-col
+│           └── StoreChrome
+│               ├── /admin → только {children} (свой AdminHeader внутри страницы)
+│               └── остальной сайт:
+│                   ├── Navbar           # fixed
+│                   ├── StoreFrame       # flex-1, отступ под шапку и BottomNav
+│                   │   └── {children}
+│                   ├── CartDrawer
+│                   ├── SearchOverlay
+│                   ├── BottomNav        # mobile, кроме /checkout и /admin
+│                   └── Footer
 ```
 
 Главная (`/`): `Catalog` + `Stories`. Остальные лендинг-секции (Hero, квиз, blog, newsletter) в репозитории есть, на страницу не вешаются.
 
+На мобиле в Navbar — логотип и лупа. Избранное, корзина и WhatsApp — в `BottomNav`. На `lg+` они снова в шапке.
+
 ## Каталог
 
-1. Состав витрины задаёт `src/lib/inventory.ts`.
-2. `npm run seed:push` деактивирует все products/offers, затем upsert строк из inventory.
-3. Витрина читает только `is_active = true`.
-4. `npm run seed:images` кладёт фото в bucket `product-images` и пишет `image_url`.
+1. Пакетный состав витрины — `src/lib/inventory.ts`.
+2. `npm run seed:push` деактивирует **все** products/offers, затем upsert из inventory.
+3. Админка может добавить, скрыть, снять с наличия или удалить оффер без правки файла. Такие строки **не** в inventory; следующий `seed:push` их выключит.
+4. Витрина читает только активный product + активный offer.
+5. `npm run seed:images` кладёт фото в bucket `product-images` и пишет `image_url`. Админка грузит фото в тот же bucket при «Добавить позицию».
 
-Счётчик «N ароматов» считает **офферы** (карточки), не уникальные названия. Red Tobacco — разлив и распив, две карточки.
+Счётчик «N ароматов» считает **офферы** (карточки), не уникальные названия.
+
+В сетке нет кнопки «В корзину» — только PDP.
 
 ## Фильтры и поиск
 
@@ -41,7 +48,11 @@ RootLayout
 
 Читаются query-параметры: `q`, `format`, `gender`, `brand`, `stock`, `min`, `max`, `sort`.
 
-Правила фильтра — `src/lib/catalog-filter.ts`. Поиск и ранжирование — `src/lib/search.ts` (название, бренд, ноты). В подсказках показывается только название; клик фильтрует сетку, не открывает PDP.
+Правила фильтра — `src/lib/catalog-filter.ts`. Поиск — `src/lib/search.ts` (название, бренд, ноты). В подсказках только название; клик фильтрует сетку.
+
+На мобиле шторка фильтров — **черновик**: сетка не меняется, пока не нажмут «Показать N». Крестик и фон отбрасывают черновик. Сортировка и табы формата на десктопе применяются сразу; сетка через `useDeferredValue`.
+
+Лупа в шапке открывает `SearchOverlay` (на главной тот же поиск, что в каталоге).
 
 ## Заказ
 
@@ -56,9 +67,13 @@ RootLayout
 
 Без галочки согласия заказ не принимается. Цены считает сервер, клиентские суммы игнорируются.
 
+Заказ со стойки идёт через server action `createAdminOrder`, без Telegram и без требования «на сайте / в наличии». См. [ADMIN.md](ADMIN.md).
+
 ## Auth и admin
 
 `src/proxy.ts` обновляет сессию Supabase. `/admin` только для email из `ADMIN_EMAILS`. Публичная регистрация в Supabase Auth должна быть выключена.
+
+Server actions админки принимают фото до 6 МБ (`next.config.ts` → `experimental.serverActions.bodySizeLimit`). Bucket режет 5 МБ и типы jpeg/png/webp.
 
 ## Тема
 
