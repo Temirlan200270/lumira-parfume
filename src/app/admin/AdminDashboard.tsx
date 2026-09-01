@@ -11,8 +11,10 @@ import type { CatalogSection, OrderStatus } from '@/lib/types'
 import AdminOfferRow from './AdminOfferRow'
 import AdminOrderCard, { type AdminOrder } from './AdminOrderCard'
 import AdminNewOrderSheet from './AdminNewOrderSheet'
+import AdminNewProductSheet from './AdminNewProductSheet'
+import type { CreatedAdminProduct } from './actions'
 
-interface AdminProduct {
+export interface AdminProduct {
   id: string
   brand: string
   name: string
@@ -64,7 +66,9 @@ export default function AdminDashboard({
   const [statusById, setStatusById] = useState<Record<string, OrderStatus>>({})
   const [hiddenOfferIds, setHiddenOfferIds] = useState<string[]>([])
   const [extraOrders, setExtraOrders] = useState<AdminOrder[]>([])
+  const [extraProducts, setExtraProducts] = useState<AdminProduct[]>([])
   const [newOrderOpen, setNewOrderOpen] = useState(false)
+  const [newProductOpen, setNewProductOpen] = useState(false)
   const deferredQuery = useDeferredValue(query)
   const deferredSection = useDeferredValue(section)
   const hidden = useMemo(() => new Set(hiddenOfferIds), [hiddenOfferIds])
@@ -87,9 +91,25 @@ export default function AdminDashboard({
   const archiveOrders = resolvedOrders.filter((order) => isArchiveStatus(order.status))
   const visibleOrders = bucket === 'work' ? workOrders : archiveOrders
 
+  const listedProducts = useMemo(() => {
+    if (extraProducts.length === 0) return products
+    const byId = new Map(products.map((product) => [product.id, { ...product, offers: [...product.offers] }]))
+    for (const extra of extraProducts) {
+      const current = byId.get(extra.id)
+      if (!current) {
+        byId.set(extra.id, extra)
+        continue
+      }
+      const ids = new Set(current.offers.map((offer) => offer.id))
+      current.imageUrl = extra.imageUrl || current.imageUrl
+      current.offers = [...extra.offers.filter((offer) => !ids.has(offer.id)), ...current.offers]
+    }
+    return [...byId.values()]
+  }, [products, extraProducts])
+
   const rows = useMemo(() => {
     const needle = normalizeSearch(deferredQuery)
-    return products.flatMap((product) =>
+    return listedProducts.flatMap((product) =>
       product.offers
         .filter((offer) => !hidden.has(offer.id))
         .filter((offer) => (deferredSection === 'all' ? true : offer.section === deferredSection))
@@ -100,11 +120,11 @@ export default function AdminDashboard({
         })
         .map((offer) => ({ product, offer }))
     )
-  }, [products, deferredQuery, deferredSection, hidden])
+  }, [listedProducts, deferredQuery, deferredSection, hidden])
 
   const catalog = useMemo(
     () =>
-      products.flatMap((product) =>
+      listedProducts.flatMap((product) =>
         product.offers
           .filter((offer) => !hidden.has(offer.id))
           .map((offer) => ({
@@ -115,7 +135,7 @@ export default function AdminDashboard({
             pricePerMlTenge: offer.pricePerMlTenge,
           }))
       ),
-    [products, hidden]
+    [listedProducts, hidden]
   )
 
   const selectPane = useCallback(
@@ -146,6 +166,39 @@ export default function AdminDashboard({
 
   const closeNewOrder = useCallback(() => {
     setNewOrderOpen(false)
+  }, [])
+
+  const closeNewProduct = useCallback(() => {
+    setNewProductOpen(false)
+  }, [])
+
+  const onProductCreated = useCallback((row: CreatedAdminProduct) => {
+    setExtraProducts((current) => {
+      const nextOffer = row.offer
+      const existing = current.find((product) => product.id === row.productId)
+      if (existing) {
+        return current.map((product) =>
+          product.id === row.productId
+            ? {
+                ...product,
+                imageUrl: row.imageUrl || product.imageUrl,
+                offers: [nextOffer, ...product.offers.filter((offer) => offer.id !== nextOffer.id)],
+              }
+            : product
+        )
+      }
+      return [
+        {
+          id: row.productId,
+          brand: row.brand,
+          name: row.name,
+          imageUrl: row.imageUrl,
+          isActive: true,
+          offers: [nextOffer],
+        },
+        ...current,
+      ]
+    })
   }, [])
 
   return (
@@ -213,6 +266,9 @@ export default function AdminDashboard({
           </section>
         ) : (
           <section className="space-y-4">
+            <Button fullWidth onClick={() => setNewProductOpen(true)}>
+              {AppStrings.admin.newProduct}
+            </Button>
             <label className="relative block">
               <span className="sr-only">{AppStrings.admin.search}</span>
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -273,6 +329,9 @@ export default function AdminDashboard({
       </div>
       {newOrderOpen ? (
         <AdminNewOrderSheet catalog={catalog} onClose={closeNewOrder} onCreated={onCreated} />
+      ) : null}
+      {newProductOpen ? (
+        <AdminNewProductSheet onClose={closeNewProduct} onCreated={onProductCreated} />
       ) : null}
     </main>
   )

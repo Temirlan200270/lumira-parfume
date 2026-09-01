@@ -105,6 +105,7 @@ export const inventory: InventoryItem[] = [
   { brand: 'Tom Ford', name: 'Oud Wood', gender: 'unisex' },
   { brand: 'Maison Crivelli', name: 'Hibiscus Mahajád', gender: 'unisex' },
   { brand: 'Maison Crivelli', name: 'Oud Maracujá', gender: 'unisex' },
+  { brand: 'Maison Crivelli', name: 'Safran Secret', gender: 'unisex' },
   { brand: 'Marc-Antoine Barrois', name: 'Aldebaran', gender: 'unisex' },
   { brand: 'Marc-Antoine Barrois', name: 'Tilia', gender: 'unisex' },
   { brand: 'Marc-Antoine Barrois', name: 'Ganymede', gender: 'unisex' },

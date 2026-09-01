@@ -2,10 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { isAdminEmail } from '@/lib/env'
+import { productSlug } from '@/lib/catalog-seed'
+import { logger } from '@/lib/logger'
+import { getPublicSupabaseEnv, isAdminEmail } from '@/lib/env'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createSupabaseAdminClient, hasSupabaseAdminEnv } from '@/lib/supabase/admin'
-import type { OrderItemSnapshot, OrderStatus, VolumeMl } from '@/lib/types'
+import type { CatalogSection, Gender, OrderItemSnapshot, OrderStatus, VolumeMl } from '@/lib/types'
 import { ORDER_STATUSES } from '@/lib/admin'
 import {
   calculateAdminOrder,
@@ -239,6 +241,177 @@ export async function createAdminOrder(input: {
     }
   } catch {
     return { ok: false, message: 'Не удалось создать заказ' }
+  }
+}
+
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024
+const PHOTO_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
+
+export interface CreatedAdminProduct {
+  productId: string
+  brand: string
+  name: string
+  imageUrl: string
+  offer: {
+    id: string
+    section: CatalogSection
+    pricePerMlTenge: number
+    isInStock: boolean
+    isActive: boolean
+  }
+}
+
+function asGender(value: string): Gender | null {
+  if (value === 'male' || value === 'female' || value === 'unisex') return value
+  return null
+}
+
+function asSection(value: string): CatalogSection | null {
+  if (value === 'razliv' || value === 'raspiv') return value
+  return null
+}
+
+async function uploadProductPhoto(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  slug: string,
+  file: File
+): Promise<string | null> {
+  const ext = PHOTO_TYPES[file.type]
+  if (!ext) return null
+  if (file.size > PHOTO_MAX_BYTES) return null
+  const env = getPublicSupabaseEnv()
+  if (!env) return null
+  const path = `${slug}.${ext}`
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const { error } = await admin.storage.from('product-images').upload(path, buffer, {
+    contentType: file.type,
+    upsert: true,
+  })
+  if (error) {
+    logger.error('product_photo_upload_failed', { message: error.message, slug })
+    return null
+  }
+  return `${env.url.replace(/\/$/, '')}/storage/v1/object/public/product-images/${path}`
+}
+
+export async function createAdminProduct(formData: FormData): Promise<
+  { ok: true; product: CreatedAdminProduct } | { ok: false; message: string }
+> {
+  try {
+    await requireAdminEmail()
+    if (!hasSupabaseAdminEnv()) return { ok: false, message: 'Сервер не настроен' }
+
+    const brand = String(formData.get('brand') ?? '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    const name = String(formData.get('name') ?? '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    const gender = asGender(String(formData.get('gender') ?? ''))
+    const section = asSection(String(formData.get('section') ?? ''))
+    const pricePerMlTenge = Number(formData.get('pricePerMlTenge'))
+    const photoRaw = formData.get('photo')
+    const photo = photoRaw instanceof File && photoRaw.size > 0 ? photoRaw : null
+
+    if (brand.length < 1 || brand.length > 80) return { ok: false, message: 'Укажите бренд' }
+    if (name.length < 1 || name.length > 80) return { ok: false, message: 'Укажите название' }
+    if (!gender) return { ok: false, message: 'Укажите пол' }
+    if (!section) return { ok: false, message: 'Укажите формат' }
+    if (!Number.isInteger(pricePerMlTenge) || pricePerMlTenge <= 0) {
+      return { ok: false, message: 'Укажите цену за мл' }
+    }
+    if (photo && (!PHOTO_TYPES[photo.type] || photo.size > PHOTO_MAX_BYTES)) {
+      return { ok: false, message: 'Фото: JPEG, PNG или WebP, до 5 МБ' }
+    }
+
+    const slug = productSlug(brand, name) || `item-${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`
+    if (!slug) return { ok: false, message: 'Укажите бренд и название' }
+
+    const admin = createSupabaseAdminClient()
+    let imageUrl = ''
+    if (photo) {
+      const uploaded = await uploadProductPhoto(admin, slug, photo)
+      if (!uploaded) return { ok: false, message: 'Не удалось загрузить фото' }
+      imageUrl = uploaded
+    }
+
+    const { data: existing, error: existingError } = await admin
+      .from('products')
+      .select('id, brand, name, image_url')
+      .eq('slug', slug)
+      .maybeSingle()
+    if (existingError) return { ok: false, message: 'Не удалось добавить позицию' }
+
+    let productId: string
+    if (existing) {
+      productId = existing.id
+      const { data: sameOffer, error: offerLookupError } = await admin
+        .from('offers')
+        .select('id')
+        .eq('product_id', productId)
+        .eq('section', section)
+        .maybeSingle()
+      if (offerLookupError) return { ok: false, message: 'Не удалось добавить позицию' }
+      if (sameOffer) return { ok: false, message: 'Эта позиция уже есть' }
+      if (imageUrl) {
+        const { error: imageError } = await admin.from('products').update({ image_url: imageUrl }).eq('id', productId)
+        if (imageError) return { ok: false, message: 'Не удалось сохранить фото' }
+      } else {
+        imageUrl = existing.image_url ?? ''
+      }
+    } else {
+      productId = crypto.randomUUID()
+      const { error: productError } = await admin.from('products').insert({
+        id: productId,
+        slug,
+        brand,
+        name,
+        description: '',
+        gender,
+        image_url: imageUrl,
+        is_active: true,
+      })
+      if (productError) return { ok: false, message: 'Не удалось добавить позицию' }
+    }
+
+    const offerId = crypto.randomUUID()
+    const { error: offerError } = await admin.from('offers').insert({
+      id: offerId,
+      product_id: productId,
+      section,
+      price_per_ml_tenge: pricePerMlTenge,
+      is_original: section === 'raspiv',
+      is_in_stock: true,
+      is_active: true,
+    })
+    if (offerError) return { ok: false, message: 'Не удалось добавить позицию' }
+
+    revalidatePath('/')
+    revalidatePath('/admin')
+    revalidatePath(`/perfume/${slug}`)
+
+    return {
+      ok: true,
+      product: {
+        productId,
+        brand: existing?.brand ?? brand,
+        name: existing?.name ?? name,
+        imageUrl,
+        offer: {
+          id: offerId,
+          section,
+          pricePerMlTenge,
+          isInStock: true,
+          isActive: true,
+        },
+      },
+    }
+  } catch {
+    return { ok: false, message: 'Не удалось добавить позицию' }
   }
 }
 
