@@ -36,9 +36,9 @@ export default function AdminLoginForm() {
   return (
     <>
       <AdminHeader />
-      <main className="flex-1 px-6 pb-20 pt-16">
-      <form onSubmit={onSubmit} className="max-w-sm mx-auto space-y-4">
-        <h1 className="text-2xl font-light text-stone-900 mb-6">{AppStrings.admin.title}</h1>
+      <main className="flex-1 px-4 pb-[max(5rem,env(safe-area-inset-bottom))] pt-10 sm:px-6">
+      <form onSubmit={onSubmit} className="mx-auto max-w-sm space-y-4">
+        <h1 className="mb-6 text-2xl font-light text-stone-900">{AppStrings.admin.title}</h1>
         <label className="block space-y-2">
           <span className="text-[11px] tracking-[0.18em] uppercase text-stone-400">
             {AppStrings.admin.email}
@@ -48,7 +48,8 @@ export default function AdminLoginForm() {
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full h-12 px-3 border border-stone-200 text-sm focus:outline-none focus:border-stone-900"
+            autoComplete="email"
+            className="h-12 w-full border border-stone-200 px-3 text-base focus:border-stone-900 focus:outline-none md:text-sm"
           />
         </label>
         <label className="block space-y-2">
@@ -60,7 +61,8 @@ export default function AdminLoginForm() {
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full h-12 px-3 border border-stone-200 text-sm focus:outline-none focus:border-stone-900"
+            autoComplete="current-password"
+            className="h-12 w-full border border-stone-200 px-3 text-base focus:border-stone-900 focus:outline-none md:text-sm"
           />
         </label>
         {error && <p className="text-sm text-red-700">{error}</p>}

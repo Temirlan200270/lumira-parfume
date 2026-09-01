@@ -161,7 +161,7 @@ export default function AdminNewOrderSheet({
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder={AppStrings.admin.search}
               autoComplete="off"
-              className="h-11 w-full border border-stone-200 bg-background pl-10 pr-3 text-sm"
+              className="h-11 w-full border border-stone-200 bg-background pl-10 pr-3 text-base md:text-sm"
             />
           </span>
         </label>
@@ -192,7 +192,7 @@ export default function AdminNewOrderSheet({
             {lines.map((line) => (
               <li key={line.offerId} className="space-y-2 border border-stone-200 p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm text-stone-900">
+                  <p className="min-w-0 break-words text-sm text-stone-900">
                     {line.brand} {line.name} · {sectionLabel(line.section)}
                   </p>
                   <button
@@ -203,7 +203,7 @@ export default function AdminNewOrderSheet({
                     {AppStrings.admin.removeLine}
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex gap-1">
                   {ALLOWED_VOLUMES.map((ml) => (
                     <button
                       key={ml}
@@ -214,7 +214,7 @@ export default function AdminNewOrderSheet({
                           current.map((item) => (item.offerId === line.offerId ? { ...item, volumeMl: ml } : item))
                         )
                       }
-                      className={`inline-flex h-11 min-w-11 items-center px-3 text-sm ${
+                      className={`inline-flex h-11 min-w-0 flex-1 items-center justify-center px-2 text-sm ${
                         line.volumeMl === ml
                           ? 'bg-stone-900 text-stone-50'
                           : 'border border-stone-200 text-stone-700'

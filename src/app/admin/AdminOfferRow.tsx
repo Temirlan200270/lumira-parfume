@@ -47,7 +47,7 @@ function Toggle({
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="inline-flex h-11 min-w-11 items-center gap-2 text-left disabled:opacity-40"
+      className="inline-flex h-11 w-full min-w-11 items-center gap-2 text-left disabled:opacity-40"
     >
       <span
         className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${
@@ -172,11 +172,13 @@ export default function AdminOfferRow({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.12em] text-muted">{brand}</p>
-            <p className="text-sm text-stone-900">{name}</p>
+            <p className="break-words text-sm text-stone-900">{name}</p>
           </div>
-          <Badge tone="outline" size="sm">
-            {sectionLabel(offer.section)}
-          </Badge>
+          <span className="shrink-0">
+            <Badge tone="outline" size="sm">
+              {sectionLabel(offer.section)}
+            </Badge>
+          </span>
         </div>
 
         <div>
@@ -194,16 +196,16 @@ export default function AdminOfferRow({
               onKeyDown={(event) => {
                 if (event.key === 'Enter') event.currentTarget.blur()
               }}
-              className="h-11 w-24 border border-stone-200 px-2 text-sm tabular-nums"
+              className="h-11 w-24 border border-stone-200 px-2 text-base tabular-nums md:text-sm"
             />
             <span className="text-xs text-muted">{AppStrings.admin.priceUnit}</span>
           </label>
-          <p className="mt-1 text-xs text-muted">
+          <p className="mt-1 break-words text-xs text-muted">
             {ALLOWED_VOLUMES.map((ml) => `${ml} мл ${formatTenge(priceForVolume(previewPrice, ml))}`).join(' · ')}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
           <Toggle
             checked={inStock}
             label={AppStrings.admin.inStock}
@@ -248,8 +250,8 @@ export default function AdminOfferRow({
               >
                 {AppStrings.admin.deleteCancel}
               </Button>
-              <Button variant="destructive" fullWidth disabled={pending} onClick={() => void remove()}>
-                {AppStrings.admin.delete}
+              <Button variant="destructive" fullWidth disabled={pending} className="px-3" onClick={() => void remove()}>
+                {AppStrings.admin.deleteConfirm}
               </Button>
             </div>
           }

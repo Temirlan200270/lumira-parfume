@@ -50,19 +50,24 @@ export default function AdminOrderCard({ order, onStatus }: AdminOrderCardProps)
 
   return (
     <article className="space-y-4 border border-stone-200 p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm font-medium text-stone-900">{order.orderNumber}</p>
-        <p className="text-xs text-muted">{formatAdminOrderTime(order.createdAt)}</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 break-all text-sm font-medium text-stone-900">{order.orderNumber}</p>
+        <p className="shrink-0 text-right text-xs text-muted">{formatAdminOrderTime(order.createdAt)}</p>
       </div>
 
       <div>
-        <p className="text-sm text-stone-900">{order.customerName}</p>
-        <p className="text-sm text-muted">{order.phoneE164}</p>
+        <p className="break-words text-sm text-stone-900">{order.customerName}</p>
+        <a
+          href={`tel:${order.phoneE164}`}
+          className="inline-flex h-11 items-center text-sm text-muted"
+        >
+          {order.phoneE164}
+        </a>
       </div>
 
       <ul className="space-y-1 text-sm text-stone-700">
         {order.items.map((item) => (
-          <li key={`${item.offerId}-${item.volumeMl}`}>
+          <li key={`${item.offerId}-${item.volumeMl}`} className="break-words">
             {item.brand} {item.name} · {sectionLabel(item.section)} · {item.volumeMl} мл × {item.quantity} —{' '}
             {formatTenge(item.lineTotalTenge)}
           </li>
@@ -83,7 +88,7 @@ export default function AdminOrderCard({ order, onStatus }: AdminOrderCardProps)
         {AppStrings.admin.whatsapp}
       </a>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="grid grid-cols-2 gap-1 sm:flex sm:flex-wrap">
         {ORDER_STATUSES.map((status) => {
           const active = order.status === status
           return (
@@ -94,7 +99,7 @@ export default function AdminOrderCard({ order, onStatus }: AdminOrderCardProps)
               onClick={() => {
                 void setStatus(status)
               }}
-              className={`inline-flex h-11 items-center px-3 text-xs ${
+              className={`inline-flex h-11 items-center justify-center px-3 text-xs sm:flex-1 ${
                 active
                   ? 'bg-stone-900 text-stone-50'
                   : 'border border-stone-200 text-stone-700 hover:border-stone-900'

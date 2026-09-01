@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import type { Viewport } from 'next'
 import AdminDashboard from './AdminDashboard'
 import AdminHeader from './AdminHeader'
 import AdminLoginForm from './AdminLoginForm'
@@ -9,6 +10,11 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { CatalogSection, OrderItemSnapshot, OrderStatus } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
+
+export const viewport: Viewport = {
+  interactiveWidget: 'resizes-content',
+  viewportFit: 'cover',
+}
 
 interface ProductRow {
   id: string
@@ -44,7 +50,7 @@ export default async function AdminPage() {
     return (
       <>
         <AdminHeader />
-        <main className="flex-1 px-6 pt-16">
+        <main className="flex-1 px-4 pt-10 sm:px-6">
           <p className="text-sm text-stone-500">Заполните переменные Supabase в .env.local</p>
         </main>
       </>
@@ -62,7 +68,7 @@ export default async function AdminPage() {
     return (
       <>
         <AdminHeader />
-        <main className="flex-1 px-6 pt-16">
+        <main className="flex-1 px-4 pt-10 sm:px-6">
           <p className="text-sm text-stone-500">{AppStrings.admin.forbidden}</p>
         </main>
       </>

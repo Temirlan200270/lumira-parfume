@@ -42,7 +42,7 @@ function asPane(value: string | null): AdminPane {
 }
 
 const tabClass = (active: boolean) =>
-  `inline-flex h-11 shrink-0 items-center px-3 text-xs uppercase tracking-[0.12em] ${
+  `inline-flex h-11 min-w-0 w-full items-center justify-center px-2 text-[11px] uppercase tracking-[0.08em] sm:px-3 sm:text-xs sm:tracking-[0.12em] ${
     active
       ? 'bg-stone-900 text-stone-50'
       : 'border border-stone-200 text-muted hover:border-stone-900 hover:text-stone-900'
@@ -149,9 +149,9 @@ export default function AdminDashboard({
   }, [])
 
   return (
-    <main className="flex-1 pb-8 pt-6 px-4 sm:px-6">
+    <main className="flex-1 px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6 sm:px-6">
       <div className="mx-auto max-w-2xl space-y-4">
-        <div role="tablist" aria-label="Раздел админки" className="flex flex-wrap gap-1">
+        <div role="tablist" aria-label="Раздел админки" className="grid grid-cols-2 gap-1">
           <button
             type="button"
             role="tab"
@@ -178,7 +178,7 @@ export default function AdminDashboard({
             <Button fullWidth onClick={() => setNewOrderOpen(true)}>
               {AppStrings.admin.newOrder}
             </Button>
-            <div role="tablist" aria-label="Очередь заказов" className="flex flex-wrap gap-1">
+            <div role="tablist" aria-label="Очередь заказов" className="grid grid-cols-2 gap-1">
               <button
                 type="button"
                 role="tab"
@@ -222,10 +222,10 @@ export default function AdminDashboard({
                 onChange={(event) => setQuery(event.currentTarget.value)}
                 placeholder={AppStrings.admin.search}
                 autoComplete="off"
-                className="h-11 w-full border border-stone-200 bg-background pl-10 pr-3 text-sm text-stone-900 placeholder:text-muted"
+                className="h-11 w-full border border-stone-200 bg-background pl-10 pr-3 text-base text-stone-900 placeholder:text-muted md:text-sm"
               />
             </label>
-            <div role="tablist" aria-label={AppStrings.catalog.filters} className="flex flex-wrap gap-1">
+            <div role="tablist" aria-label={AppStrings.catalog.filters} className="grid grid-cols-3 gap-1">
               {FORMAT_TABS.map((tab) => (
                 <button
                   key={tab.id}
