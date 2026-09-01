@@ -1,45 +1,51 @@
 'use client'
 
-import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { Filter, Search, X } from 'lucide-react'
 import type { Perfume } from '@/lib/data'
 import ProductCard from '@/components/ui/ProductCard'
-import Button from '@/components/ui/Button'
+import FilterFields, { type FilterDraft } from '@/components/catalog/FilterFields'
+import FilterSheet from '@/components/catalog/FilterSheet'
 import { applyCatalogFilters, hasNarrowingFilters } from '@/lib/catalog-filter'
 import { CATALOG_SEARCH_ID } from '@/lib/constants'
 import { aromaCountLabel } from '@/lib/labels'
 import { POPULAR_QUERIES, rankPerfumes, searchSuggestions } from '@/lib/search'
 import { AppStrings } from '@/lib/strings'
 import LogoMark from '@/components/ui/LogoMark'
-import { useFocusTrap } from '@/lib/use-focus-trap'
-
-const GENDER_OPTIONS: { id: 'all' | Perfume['gender']; label: string }[] = [
-  { id: 'all', label: AppStrings.gender.all },
-  { id: 'male', label: AppStrings.gender.male },
-  { id: 'female', label: AppStrings.gender.female },
-  { id: 'unisex', label: AppStrings.gender.unisex },
-]
+import { useSearchUi } from '@/components/layout/SearchProvider'
 
 type SectionFilter = 'all' | 'razliv' | 'raspiv'
 type SortKey = 'popular' | 'price-asc' | 'price-desc' | 'name'
 type StockFilter = 'all' | 'in' | 'out'
+
+const CATALOG_TABS: { id: SectionFilter; label: string }[] = [
+  { id: 'all', label: AppStrings.catalog.tabAll },
+  { id: 'razliv', label: AppStrings.catalog.razliv },
+  { id: 'raspiv', label: AppStrings.catalog.raspiv },
+]
 
 interface CatalogProps {
   perfumes: Perfume[]
 }
 
 const CatalogGrid = memo(function CatalogGrid({ perfumes }: { perfumes: Perfume[] }) {
+  const priorityIdsRef = useRef<Set<string> | null>(null)
+  if (!priorityIdsRef.current) {
+    priorityIdsRef.current = new Set(perfumes.slice(0, 8).map((item) => item.id))
+  }
+  const priorityIds = priorityIdsRef.current
+
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-6 lg:grid-cols-4">
-      {perfumes.map((perfume, index) => (
-        <ProductCard key={perfume.id} perfume={perfume} index={index} />
+      {perfumes.map((perfume) => (
+        <ProductCard key={perfume.id} perfume={perfume} priority={priorityIds.has(perfume.id)} />
       ))}
     </div>
   )
 })
 
-function SortSelect({
+const SortSelect = memo(function SortSelect({
   value,
   className,
   onChange,
@@ -61,7 +67,7 @@ function SortSelect({
       <option value="name">{AppStrings.catalog.sortName}</option>
     </select>
   )
-}
+})
 
 function asSection(value: string | null): SectionFilter {
   if (value === 'razliv' || value === 'raspiv') return value
@@ -86,11 +92,10 @@ function asSort(value: string | null): SortKey {
 export default function Catalog({ perfumes }: CatalogProps) {
   const searchParams = useSearchParams()
   const pathname = usePathname()
+  const { registerHomeQuery } = useSearchUi()
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
-  const filterSheetRef = useRef<HTMLDivElement>(null)
   const closeFilters = useCallback(() => setFiltersOpen(false), [])
-  useFocusTrap(filtersOpen, filterSheetRef, closeFilters)
 
   const urlSection = asSection(searchParams.get('format'))
   const urlQuery = searchParams.get('q') ?? ''
@@ -112,6 +117,11 @@ export default function Catalog({ perfumes }: CatalogProps) {
   const deferredQuery = useDeferredValue(query)
   const deferredMinPrice = useDeferredValue(minPrice)
   const deferredMaxPrice = useDeferredValue(maxPrice)
+  const deferredSection = useDeferredValue(activeSection)
+  const deferredGender = useDeferredValue(selectedGender)
+  const deferredBrand = useDeferredValue(selectedBrand)
+  const deferredStockValue = useDeferredValue(stock)
+  const deferredSortBy = useDeferredValue(sortBy)
   const queryRef = useRef(query)
   const minPriceRef = useRef(minPrice)
   const maxPriceRef = useRef(maxPrice)
@@ -167,7 +177,29 @@ export default function Catalog({ perfumes }: CatalogProps) {
       if ('brand' in patch) setSelectedBrand(patch.brand ?? '')
       if ('stock' in patch) setStock(asStock(patch.stock))
       if ('sort' in patch) setSortBy(asSort(patch.sort))
-      writeSearchToUrl(patch)
+      startTransition(() => {
+        writeSearchToUrl(patch)
+      })
+    },
+    [writeSearchToUrl]
+  )
+
+  const applySheetFilters = useCallback(
+    (draft: FilterDraft) => {
+      setSelectedGender(draft.gender)
+      setSelectedBrand(draft.brand)
+      setStock(draft.stock)
+      setMinPrice(draft.minPrice)
+      setMaxPrice(draft.maxPrice)
+      startTransition(() => {
+        writeSearchToUrl({
+          gender: draft.gender === 'all' ? null : draft.gender,
+          brand: draft.brand || null,
+          stock: draft.stock === 'all' ? null : draft.stock,
+          min: draft.minPrice || null,
+          max: draft.maxPrice || null,
+        })
+      })
     },
     [writeSearchToUrl]
   )
@@ -195,6 +227,11 @@ export default function Catalog({ perfumes }: CatalogProps) {
     [writeQueryToUrl]
   )
 
+  useEffect(() => {
+    registerHomeQuery(commitQuery)
+    return () => registerHomeQuery(null)
+  }, [commitQuery, registerHomeQuery])
+
   const onSearchChange = (value: string) => {
     setQuery(value)
   }
@@ -206,28 +243,28 @@ export default function Catalog({ perfumes }: CatalogProps) {
     () => perfumes.some((perfume) => perfume.isInStock === false),
     [perfumes],
   )
-  const effectiveStock = hasOutOfStock ? stock : 'all'
+  const gridStock = hasOutOfStock ? deferredStockValue : 'all'
 
   const scoped = useMemo(
     () =>
       applyCatalogFilters(perfumes, {
-        section: activeSection,
-        gender: selectedGender,
-        brand: selectedBrand,
-        stock: effectiveStock,
+        section: deferredSection,
+        gender: deferredGender,
+        brand: deferredBrand,
+        stock: gridStock,
         minPrice: deferredMinPrice,
         maxPrice: deferredMaxPrice,
-        sortBy,
+        sortBy: deferredSortBy,
       }),
     [
       perfumes,
-      activeSection,
-      selectedGender,
-      selectedBrand,
-      effectiveStock,
+      deferredSection,
+      deferredGender,
+      deferredBrand,
+      gridStock,
       deferredMinPrice,
       deferredMaxPrice,
-      sortBy,
+      deferredSortBy,
     ]
   )
 
@@ -248,11 +285,20 @@ export default function Catalog({ perfumes }: CatalogProps) {
         ? AppStrings.catalog.razliv
         : AppStrings.catalog.all
 
-  const tabs: { id: SectionFilter; label: string }[] = [
-    { id: 'all', label: AppStrings.catalog.tabAll },
-    { id: 'razliv', label: AppStrings.catalog.razliv },
-    { id: 'raspiv', label: AppStrings.catalog.raspiv },
-  ]
+  const appliedDraft = useMemo<FilterDraft>(
+    () => ({
+      gender: selectedGender,
+      brand: selectedBrand,
+      stock,
+      minPrice,
+      maxPrice,
+    }),
+    [selectedGender, selectedBrand, stock, minPrice, maxPrice]
+  )
+
+  const frozenGridRef = useRef(filtered)
+  if (!filtersOpen) frozenGridRef.current = filtered
+  const gridPerfumes = filtersOpen ? frozenGridRef.current : filtered
 
   const reset = () => {
     setQuery('')
@@ -268,124 +314,44 @@ export default function Catalog({ perfumes }: CatalogProps) {
     }
   }
 
-  const renderFilters = () => (
-    <div className="space-y-4">
-      <fieldset>
-        <legend className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-          {AppStrings.catalog.gender}
-        </legend>
-        <div className="grid grid-cols-2 gap-1">
-          {GENDER_OPTIONS.map((gender) => (
-            <button
-              key={gender.id}
-              type="button"
-              onClick={() => setParams({ gender: gender.id === 'all' ? null : gender.id })}
-              className={`flex min-h-9 items-center justify-center px-2 text-sm ${
-                selectedGender === gender.id ? 'bg-stone-900 text-stone-50' : 'text-stone-700 hover:bg-stone-100'
-              }`}
-            >
-              {gender.label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+  const onSortChange = useCallback((value: string | null) => {
+    setParams({ sort: value })
+  }, [setParams])
 
-      <fieldset>
-        <legend className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-          {AppStrings.catalog.brand}
-        </legend>
-        <select
-          aria-label={AppStrings.catalog.brand}
-          value={selectedBrand}
-          onChange={(event) => setParams({ brand: event.target.value || null })}
-          className="h-10 w-full rounded-[2px] border border-stone-200 bg-background px-3 text-sm"
-        >
-          <option value="">{AppStrings.catalog.allBrands}</option>
-          {brands.map((brand) => (
-            <option key={brand} value={brand}>
-              {brand}
-            </option>
-          ))}
-        </select>
-      </fieldset>
-
-      <fieldset>
-        <legend className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-          {AppStrings.catalog.price}
-        </legend>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            inputMode="numeric"
-            placeholder="от"
-            value={minPrice}
-            onChange={(event) => setMinPrice(event.target.value)}
-            onBlur={commitPriceToUrl}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur()
-            }}
-            className="h-10 rounded-[2px] border border-stone-200 px-3 text-sm"
-          />
-          <input
-            type="number"
-            inputMode="numeric"
-            placeholder="до"
-            value={maxPrice}
-            onChange={(event) => setMaxPrice(event.target.value)}
-            onBlur={commitPriceToUrl}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') event.currentTarget.blur()
-            }}
-            className="h-10 rounded-[2px] border border-stone-200 px-3 text-sm"
-          />
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-muted">
-          {AppStrings.catalog.stock}
-        </legend>
-        <div className="grid grid-cols-1 gap-1">
-          {(['all', 'in', ...(hasOutOfStock ? (['out'] as const) : [])] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setParams({ stock: item === 'all' ? null : item })}
-              className={`flex min-h-9 items-center px-3 text-left text-sm ${
-                effectiveStock === item ? 'bg-stone-900 text-stone-50' : 'text-stone-700 hover:bg-stone-100'
-              }`}
-            >
-              {item === 'all'
-                ? AppStrings.catalog.stockAll
-                : item === 'in'
-                  ? AppStrings.catalog.stockIn
-                  : AppStrings.catalog.stockOut}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      <button type="button" onClick={reset} className="text-sm text-muted hover:text-stone-900">
-        {AppStrings.catalog.reset}
-      </button>
-    </div>
+  const onDesktopFilterChange = useCallback(
+    (patch: Partial<FilterDraft>) => {
+      if (patch.gender !== undefined) {
+        setParams({ gender: patch.gender === 'all' ? null : patch.gender })
+      }
+      if (patch.brand !== undefined) {
+        setParams({ brand: patch.brand || null })
+      }
+      if (patch.stock !== undefined) {
+        setParams({ stock: patch.stock === 'all' ? null : patch.stock })
+      }
+      if (patch.minPrice !== undefined) setMinPrice(patch.minPrice)
+      if (patch.maxPrice !== undefined) setMaxPrice(patch.maxPrice)
+    },
+    [setParams]
   )
 
   return (
-    <section className="section-y bg-background">
+    <section className="bg-background pt-3 pb-10 md:pt-16 md:pb-16">
       <div className="container-lumira">
-        <div className="mb-6">
+        <div className="mb-4 md:mb-6">
           <LogoMark />
         </div>
-        <h1 className="mb-6 text-[32px] font-light leading-10 text-stone-900 md:text-[40px]">{title}</h1>
+        <h1 className="sr-only md:not-sr-only md:mb-6 md:text-[40px] md:font-light md:leading-10 md:text-stone-900">
+          {title}
+        </h1>
 
-        <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="mb-2 flex items-center gap-2 md:mb-3 md:gap-3">
           <div
             role="tablist"
             aria-label="Раздел каталога"
-            className="flex shrink-0 gap-1 overflow-x-auto"
+            className="flex min-w-0 flex-1 gap-1 overflow-x-auto md:flex-none"
           >
-            {tabs.map((tab) => {
+            {CATALOG_TABS.map((tab) => {
               const active = activeSection === tab.id
               return (
                 <button
@@ -394,7 +360,7 @@ export default function Catalog({ perfumes }: CatalogProps) {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setParams({ format: tab.id === 'all' ? null : tab.id })}
-                  className={`inline-flex h-11 shrink-0 items-center px-4 text-xs uppercase tracking-[0.12em] ${
+                  className={`inline-flex h-9 shrink-0 items-center px-3 text-xs uppercase tracking-[0.12em] md:h-11 md:px-4 ${
                     active
                       ? 'bg-stone-900 text-stone-50'
                       : 'border border-stone-200 text-muted hover:border-stone-900 hover:text-stone-900'
@@ -406,8 +372,17 @@ export default function Catalog({ perfumes }: CatalogProps) {
             })}
           </div>
 
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 border border-stone-200 px-3 text-xs lg:hidden"
+          >
+            <Filter className="h-3.5 w-3.5" />
+            {AppStrings.catalog.filters}
+          </button>
+
           <form
-            className="relative min-w-0 flex-1"
+            className="relative hidden min-w-0 flex-1 md:block"
             onSubmit={(event) => {
               event.preventDefault()
               commitQuery(query.trim())
@@ -483,58 +458,17 @@ export default function Catalog({ perfumes }: CatalogProps) {
         </div>
 
         <div className="flex flex-col gap-8 lg:flex-row">
-          <div className="lg:hidden">
-            <div className="mb-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setFiltersOpen(true)}
-                className="inline-flex h-11 items-center gap-2 border border-stone-200 px-4 text-sm"
-              >
-                <Filter className="h-4 w-4" />
-                {AppStrings.catalog.filters}
-              </button>
-              <SortSelect
-                value={sortBy}
-                onChange={(value) => setParams({ sort: value })}
-                className="h-11 flex-1 rounded-[2px] border border-stone-200 bg-background px-3 text-sm"
-              />
-            </div>
-          </div>
-
           {filtersOpen ? (
-            <div className="fixed inset-0 z-[70] lg:hidden">
-              <button
-                type="button"
-                className="absolute inset-0 bg-black/40"
-                aria-label="Закрыть фильтры"
-                onClick={closeFilters}
-              />
-              <div
-                ref={filterSheetRef}
-                className="absolute inset-x-0 bottom-0 flex max-h-[90vh] flex-col bg-background pb-[env(safe-area-inset-bottom)]"
-                role="dialog"
-                aria-modal="true"
-                aria-label={AppStrings.catalog.filters}
-              >
-                <div className="flex items-center justify-between px-4 pt-4">
-                  <p className="text-sm font-medium">{AppStrings.catalog.filters}</p>
-                  <button
-                    type="button"
-                    className="flex h-11 w-11 items-center justify-center"
-                    onClick={closeFilters}
-                    aria-label="Закрыть"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2">{renderFilters()}</div>
-                <div className="border-t border-stone-200 px-4 py-3">
-                  <Button fullWidth onClick={closeFilters}>
-                    {AppStrings.catalog.showResults} {aromaCountLabel(filtered.length)}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <FilterSheet
+              initial={appliedDraft}
+              brands={brands}
+              hasOutOfStock={hasOutOfStock}
+              perfumes={perfumes}
+              section={activeSection}
+              query={query}
+              onApply={applySheetFilters}
+              onClose={closeFilters}
+            />
           ) : null}
 
           <aside className="hidden w-64 shrink-0 lg:block">
@@ -542,30 +476,39 @@ export default function Catalog({ perfumes }: CatalogProps) {
               <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">
                 {AppStrings.catalog.filters}
               </p>
-              {renderFilters()}
+              <FilterFields
+                draft={appliedDraft}
+                brands={brands}
+                hasOutOfStock={hasOutOfStock}
+                onChange={onDesktopFilterChange}
+                onReset={reset}
+                onPriceCommit={commitPriceToUrl}
+              />
             </div>
           </aside>
 
           <div className="min-w-0 flex-1">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <p className="text-sm text-muted">{aromaCountLabel(filtered.length)}</p>
+            <div className="mb-3 flex items-center justify-between gap-3 md:mb-4">
+              <p className="text-xs text-muted md:text-sm">{aromaCountLabel(filtered.length)}</p>
               <SortSelect
                 value={sortBy}
-                onChange={(value) => setParams({ sort: value })}
-                className="hidden h-10 w-52 rounded-[2px] border border-stone-200 bg-background px-3 text-sm lg:block"
+                onChange={onSortChange}
+                className="h-8 max-w-[11rem] rounded-[2px] border-0 bg-transparent px-0 text-xs text-stone-900 lg:h-10 lg:w-52 lg:max-w-none lg:border lg:border-stone-200 lg:bg-background lg:px-3 lg:text-sm"
               />
             </div>
 
-            {filtered.length > 0 ? (
-              <CatalogGrid perfumes={filtered} />
-            ) : activeSection === 'raspiv' &&
+            {gridPerfumes.length > 0 ? (
+              <div aria-busy={deferredSortBy !== sortBy || deferredSection !== activeSection || undefined}>
+                <CatalogGrid perfumes={gridPerfumes} />
+              </div>
+            ) : deferredSection === 'raspiv' &&
               !hasNarrowingFilters({
-                gender: selectedGender,
-                brand: selectedBrand,
-                stock: effectiveStock,
-                minPrice,
-                maxPrice,
-                query,
+                gender: deferredGender,
+                brand: deferredBrand,
+                stock: gridStock,
+                minPrice: deferredMinPrice,
+                maxPrice: deferredMaxPrice,
+                query: deferredQuery,
               }) ? (
               <div className="py-20">
                 <p className="text-sm text-stone-900">{AppStrings.catalog.emptyRaspiv}</p>

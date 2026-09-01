@@ -159,16 +159,47 @@ export function calculateOrder(
   items: OrderRequestItem[],
   offers: OfferForOrder[]
 ): OrderResult<CalculatedOrder> {
+  return snapshotOrder(items, offers, { requireListed: true, requireStock: true })
+}
+
+export function calculateAdminOrder(
+  items: OrderRequestItem[],
+  offers: OfferForOrder[]
+): OrderResult<CalculatedOrder> {
+  return snapshotOrder(items, offers, { requireListed: false, requireStock: false })
+}
+
+function snapshotOrder(
+  items: OrderRequestItem[],
+  offers: OfferForOrder[],
+  rules: { requireListed: boolean; requireStock: boolean }
+): OrderResult<CalculatedOrder> {
+  if (items.length === 0) {
+    return fail('empty_cart', 'Корзина пуста')
+  }
+  if (items.length > MAX_CART_ITEMS) {
+    return fail('cart_too_large', 'Слишком много позиций в корзине')
+  }
+
   const offerMap = new Map(offers.map((offer) => [offer.id, offer]))
   const snapshots: OrderItemSnapshot[] = []
   let totalTenge = 0
 
   for (const item of items) {
+    if (!isVolumeMl(item.volumeMl)) {
+      return fail('invalid_volume', 'Доступны только объёмы 5, 10 и 20 мл')
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > MAX_LINE_QUANTITY) {
+      return fail('invalid_quantity', 'Количество должно быть от 1 до 10')
+    }
     const offer = offerMap.get(item.offerId)
-    if (!offer || !offer.isActive || !offer.productIsActive) {
+    if (!offer) {
       return fail('offer_unavailable', 'Товар больше недоступен')
     }
-    if (!offer.isInStock) {
+    if (rules.requireListed && (!offer.isActive || !offer.productIsActive)) {
+      return fail('offer_unavailable', 'Товар больше недоступен')
+    }
+    if (rules.requireStock && !offer.isInStock) {
       return fail('offer_out_of_stock', `${offer.brand} ${offer.name} сейчас нет в наличии`)
     }
 

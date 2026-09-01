@@ -6,17 +6,20 @@ export type CatalogStockFilter = 'all' | 'in' | 'out'
 
 export const CATALOG_PRICE_VOLUME_ML = 5
 
-export interface CatalogFilterInput {
+export interface CatalogMatchInput {
   section: CatalogSectionFilter
   gender: Perfume['gender'] | 'all'
   brand: string
   stock: CatalogStockFilter
   minPrice: string
   maxPrice: string
+}
+
+export interface CatalogFilterInput extends CatalogMatchInput {
   sortBy: CatalogSortKey
 }
 
-export function applyCatalogFilters(perfumes: Perfume[], filters: CatalogFilterInput): Perfume[] {
+export function matchCatalogFilters(perfumes: Perfume[], filters: CatalogMatchInput): Perfume[] {
   let result = perfumes
   if (filters.section !== 'all') {
     result = result.filter((perfume) => perfume.section === filters.section)
@@ -42,7 +45,11 @@ export function applyCatalogFilters(perfumes: Perfume[], filters: CatalogFilterI
   if (filters.maxPrice && Number.isFinite(max)) {
     result = result.filter((perfume) => perfume.pricePerMl * CATALOG_PRICE_VOLUME_ML <= max)
   }
+  return result
+}
 
+export function applyCatalogFilters(perfumes: Perfume[], filters: CatalogFilterInput): Perfume[] {
+  const result = matchCatalogFilters(perfumes, filters)
   const sorted = [...result]
   switch (filters.sortBy) {
     case 'price-asc':

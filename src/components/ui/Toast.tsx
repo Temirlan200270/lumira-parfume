@@ -11,7 +11,7 @@ import {
 } from 'react'
 
 interface ToastContextValue {
-  toast: (message: string) => void
+  toast: (message: string, durationMs?: number) => void
 }
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined)
@@ -20,7 +20,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState<string | null>(null)
   const timerRef = useRef<number | null>(null)
 
-  const toast = useCallback((next: string) => {
+  const toast = useCallback((next: string, durationMs = 3000) => {
     if (timerRef.current !== null) {
       window.clearTimeout(timerRef.current)
     }
@@ -28,7 +28,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     timerRef.current = window.setTimeout(() => {
       setMessage(null)
       timerRef.current = null
-    }, 3000)
+    }, durationMs)
   }, [])
 
   const value = useMemo(() => ({ toast }), [toast])

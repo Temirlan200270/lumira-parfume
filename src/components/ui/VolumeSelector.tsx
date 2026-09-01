@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { VOLUME_OPTIONS, type VolumeMl } from '@/lib/data'
 
 interface VolumeSelectorProps {
@@ -9,7 +10,7 @@ interface VolumeSelectorProps {
   size?: 'card' | 'pdp'
 }
 
-export default function VolumeSelector({
+function VolumeSelector({
   value,
   onChange,
   disabled = false,
@@ -42,3 +43,5 @@ export default function VolumeSelector({
     </div>
   )
 }
+
+export default memo(VolumeSelector)

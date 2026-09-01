@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { AppStrings } from '@/lib/strings'
 
 interface LogoProps {
   href?: string | null
@@ -12,13 +13,13 @@ export default function Logo({ href = '/', inverted = false }: LogoProps) {
   const inner = (
     <span className={`inline-flex items-baseline gap-2 ${wordmark}`}>
       <span className="font-serif text-xl italic font-normal tracking-normal md:text-2xl">
-        lumira
+        {AppStrings.brand.mark}
       </span>
       <span className={`${mark} font-light`} aria-hidden="true">
         —
       </span>
       <span className={`${mark} text-[10px] font-light uppercase tracking-[0.2em] md:text-[11px]`}>
-        PARFUME
+        {AppStrings.brand.line}
       </span>
     </span>
   )

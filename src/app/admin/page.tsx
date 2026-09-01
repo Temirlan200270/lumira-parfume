@@ -1,4 +1,6 @@
+import { Suspense } from 'react'
 import AdminDashboard from './AdminDashboard'
+import AdminHeader from './AdminHeader'
 import AdminLoginForm from './AdminLoginForm'
 import { isAdminEmail } from '@/lib/env'
 import { AppStrings } from '@/lib/strings'
@@ -13,6 +15,7 @@ interface ProductRow {
   brand: string
   name: string
   is_active: boolean
+  image_url: string
 }
 
 interface OfferRow {
@@ -39,9 +42,12 @@ interface OrderRow {
 export default async function AdminPage() {
   if (!hasSupabaseAdminEnv()) {
     return (
-      <main className="flex-1 pt-32 px-6">
-        <p className="text-sm text-stone-500">Заполните переменные Supabase в .env.local</p>
-      </main>
+      <>
+        <AdminHeader />
+        <main className="flex-1 px-6 pt-16">
+          <p className="text-sm text-stone-500">Заполните переменные Supabase в .env.local</p>
+        </main>
+      </>
     )
   }
 
@@ -54,21 +60,24 @@ export default async function AdminPage() {
   const email = typeof data.claims.email === 'string' ? data.claims.email : ''
   if (!isAdminEmail(email)) {
     return (
-      <main className="flex-1 pt-32 px-6">
-        <p className="text-sm text-stone-500">{AppStrings.admin.forbidden}</p>
-      </main>
+      <>
+        <AdminHeader />
+        <main className="flex-1 px-6 pt-16">
+          <p className="text-sm text-stone-500">{AppStrings.admin.forbidden}</p>
+        </main>
+      </>
     )
   }
 
   const admin = createSupabaseAdminClient()
   const [{ data: products }, { data: offers }, { data: orders }] = await Promise.all([
-    admin.from('products').select('id, brand, name, is_active').order('brand'),
+    admin.from('products').select('id, brand, name, is_active, image_url').order('brand'),
     admin.from('offers').select('id, product_id, section, price_per_ml_tenge, is_in_stock, is_active'),
     admin
       .from('orders')
       .select('id, order_number, customer_name, phone_e164, items, total_tenge, status, telegram_sent, created_at')
       .order('created_at', { ascending: false })
-      .limit(50),
+      .limit(100),
   ])
 
   const offerRows = (offers ?? []) as OfferRow[]
@@ -76,6 +85,7 @@ export default async function AdminPage() {
     id: product.id,
     brand: product.brand,
     name: product.name,
+    imageUrl: product.image_url ?? '',
     isActive: product.is_active,
     offers: offerRows
       .filter((offer) => offer.product_id === product.id)
@@ -100,5 +110,12 @@ export default async function AdminPage() {
     createdAt: order.created_at,
   }))
 
-  return <AdminDashboard products={dashboardProducts} orders={dashboardOrders} />
+  return (
+    <>
+      <AdminHeader showLogout />
+      <Suspense fallback={<main className="flex-1 px-4 pt-8 sm:px-6" />}>
+        <AdminDashboard products={dashboardProducts} orders={dashboardOrders} />
+      </Suspense>
+    </>
+  )
 }

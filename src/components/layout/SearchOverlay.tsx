@@ -1,24 +1,45 @@
 'use client'
 
-import { FormEvent, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { useSearchUi } from '@/components/layout/SearchProvider'
-import { POPULAR_QUERIES, searchSuggestions } from '@/lib/search'
+import { normalizeSearch } from '@/lib/data'
+import { POPULAR_QUERIES } from '@/lib/search'
 import { AppStrings } from '@/lib/strings'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 
-export default function SearchOverlay() {
-  const { isOpen, closeSearch, perfumes } = useSearchUi()
-  const [query, setQuery] = useState('')
-  const router = useRouter()
+interface SearchIndexItem {
+  id: string
+  name: string
+}
 
-  const suggestions = useMemo(
-    () => (query.trim().length >= 2 ? searchSuggestions(perfumes, query) : []),
-    [perfumes, query]
-  )
+export default function SearchOverlay() {
+  const { isOpen, closeSearch, applyHomeQuery } = useSearchUi()
+  const [query, setQuery] = useState('')
+  const [index, setIndex] = useState<SearchIndexItem[] | null>(null)
+  const pathname = usePathname()
+  const router = useRouter()
   const overlayRef = useRef<HTMLDivElement>(null)
   useFocusTrap(isOpen, overlayRef, closeSearch)
+
+  useEffect(() => {
+    if (!isOpen || index) return
+    const controller = new AbortController()
+    fetch('/api/search-index', { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((rows: SearchIndexItem[]) => setIndex(Array.isArray(rows) ? rows : []))
+      .catch(() => {
+        if (!controller.signal.aborted) setIndex([])
+      })
+    return () => controller.abort()
+  }, [isOpen, index])
+
+  const suggestions = useMemo(() => {
+    if (query.trim().length < 2 || !index) return []
+    const needle = normalizeSearch(query)
+    return index.filter((row) => normalizeSearch(row.name).includes(needle)).slice(0, 6)
+  }, [index, query])
 
   if (!isOpen) return null
 
@@ -26,6 +47,7 @@ export default function SearchOverlay() {
     const next = value.trim()
     closeSearch()
     setQuery('')
+    if (pathname === '/' && applyHomeQuery(next)) return
     router.push(next ? `/?q=${encodeURIComponent(next)}` : '/')
   }
 
@@ -46,7 +68,7 @@ export default function SearchOverlay() {
             id="overlay-search"
             type="text"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => setQuery(event.currentTarget.value)}
             placeholder={AppStrings.catalog.searchPlaceholder}
             autoComplete="off"
             autoCorrect="off"
@@ -90,19 +112,19 @@ export default function SearchOverlay() {
             </div>
           ) : suggestions.length > 0 ? (
             <ul>
-              {suggestions.map((perfume) => (
-                <li key={perfume.id}>
+              {suggestions.map((item) => (
+                <li key={item.id}>
                   <button
                     type="button"
                     className="flex h-auto w-full flex-col items-start py-3 text-left"
-                    onClick={() => goCatalog(perfume.name)}
+                    onClick={() => goCatalog(item.name)}
                   >
-                    <span className="text-sm text-stone-900">{perfume.name}</span>
+                    <span className="text-sm text-stone-900">{item.name}</span>
                   </button>
                 </li>
               ))}
             </ul>
-          ) : (
+          ) : index === null ? null : (
             <p className="text-sm text-muted">
               {`По запросу «${query}» ничего не найдено`}
             </p>

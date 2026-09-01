@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { isRenderableProductImage } from '@/lib/product-image'
 
 interface ProductPhotoProps {
@@ -12,7 +12,7 @@ interface ProductPhotoProps {
   priority?: boolean
 }
 
-export default function ProductPhoto({
+function ProductPhoto({
   src,
   alt,
   name,
@@ -42,7 +42,9 @@ export default function ProductPhoto({
       decoding="async"
       fetchPriority={priority ? 'high' : 'auto'}
       onError={() => setFailed(true)}
-      className={`h-full w-full object-cover transition-transform duration-700 ease-out ${faded ? 'opacity-50' : ''} ${className}`}
+      className={`h-full w-full object-cover ${faded ? 'opacity-50' : ''} ${className}`}
     />
   )
 }
+
+export default memo(ProductPhoto)

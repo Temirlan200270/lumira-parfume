@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react'
 import { createSupabaseBrowserClient } from '@/lib/supabase/browser'
 import { AppStrings } from '@/lib/strings'
+import AdminHeader from './AdminHeader'
 
 export default function AdminLoginForm() {
   const [email, setEmail] = useState('')
@@ -33,7 +34,9 @@ export default function AdminLoginForm() {
   }
 
   return (
-    <main className="flex-1 pt-32 pb-20 px-6">
+    <>
+      <AdminHeader />
+      <main className="flex-1 px-6 pb-20 pt-16">
       <form onSubmit={onSubmit} className="max-w-sm mx-auto space-y-4">
         <h1 className="text-2xl font-light text-stone-900 mb-6">{AppStrings.admin.title}</h1>
         <label className="block space-y-2">
@@ -69,6 +72,7 @@ export default function AdminLoginForm() {
           {AppStrings.admin.login}
         </button>
       </form>
-    </main>
+      </main>
+    </>
   )
 }

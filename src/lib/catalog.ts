@@ -133,13 +133,51 @@ export async function getCatalog(): Promise<Perfume[]> {
   return result.perfumes
 }
 
-export async function getPerfumeBySlug(
+export const getPerfumeBySlug = cache(async function getPerfumeBySlug(
   slug: string,
   section?: CatalogSection
 ): Promise<Perfume | null> {
-  const catalog = await getCatalog()
-  const matches = catalog.filter((perfume) => perfume.slug === slug)
-  if (matches.length === 0) return null
-  if (section) return matches.find((perfume) => perfume.section === section) ?? matches[0] ?? null
-  return matches.find((perfume) => perfume.section === 'razliv') ?? matches[0] ?? null
-}
+  if (!getPublicSupabaseEnv()) return null
+
+  try {
+    const supabase = await createSupabaseServerClient()
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select('id, slug, brand, name, description, gender, notes, image_url, is_active')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (productError || !product) {
+      if (productError) {
+        logger.error('perfume_fetch_failed', { message: productError.message, slug })
+      }
+      return null
+    }
+
+    const { data: offers, error: offersError } = await supabase
+      .from('offers')
+      .select('id, product_id, section, price_per_ml_tenge, is_original, is_in_stock, is_active')
+      .eq('product_id', product.id)
+      .eq('is_active', true)
+
+    if (offersError) {
+      logger.error('perfume_fetch_failed', { message: offersError.message, slug })
+      return null
+    }
+
+    const mapped = ((offers ?? []) as OfferRow[]).map((offer) =>
+      toPerfumeCard(product as ProductRow, offer)
+    )
+    if (mapped.length === 0) return null
+    if (section) return mapped.find((perfume) => perfume.section === section) ?? mapped[0] ?? null
+    return mapped.find((perfume) => perfume.section === 'razliv') ?? mapped[0] ?? null
+  } catch (error) {
+    logger.error('perfume_fetch_failed', {
+      message: error instanceof Error ? error.message : 'unknown',
+      slug,
+    })
+    return null
+  }
+})
+

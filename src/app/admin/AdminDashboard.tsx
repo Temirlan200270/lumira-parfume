@@ -1,12 +1,22 @@
-import { formatTenge } from '@/lib/order'
+'use client'
+
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { Search } from 'lucide-react'
+import Button from '@/components/ui/Button'
+import { normalizeSearch } from '@/lib/data'
+import { isArchiveStatus, isWorkStatus } from '@/lib/admin'
 import { AppStrings } from '@/lib/strings'
-import type { CatalogSection, OrderItemSnapshot, OrderStatus } from '@/lib/types'
-import { signOutAdmin, updateOffer, updateOrderStatus, updateProductVisibility } from './actions'
+import type { CatalogSection, OrderStatus } from '@/lib/types'
+import AdminOfferRow from './AdminOfferRow'
+import AdminOrderCard, { type AdminOrder } from './AdminOrderCard'
+import AdminNewOrderSheet from './AdminNewOrderSheet'
 
 interface AdminProduct {
   id: string
   brand: string
   name: string
+  imageUrl: string
   isActive: boolean
   offers: Array<{
     id: string
@@ -17,19 +27,26 @@ interface AdminProduct {
   }>
 }
 
-interface AdminOrder {
-  id: string
-  orderNumber: string
-  customerName: string
-  phoneE164: string
-  items: OrderItemSnapshot[]
-  totalTenge: number
-  status: OrderStatus
-  telegramSent: boolean
-  createdAt: string
+type SectionFilter = 'all' | CatalogSection
+type AdminPane = 'orders' | 'vitrina'
+type OrderBucket = 'work' | 'archive'
+
+const FORMAT_TABS: { id: SectionFilter; label: string }[] = [
+  { id: 'all', label: AppStrings.catalog.tabAll },
+  { id: 'razliv', label: AppStrings.catalog.razliv },
+  { id: 'raspiv', label: AppStrings.catalog.raspiv },
+]
+
+function asPane(value: string | null): AdminPane {
+  return value === 'vitrina' ? 'vitrina' : 'orders'
 }
 
-const STATUSES: OrderStatus[] = ['new', 'confirmed', 'paid', 'completed', 'cancelled']
+const tabClass = (active: boolean) =>
+  `inline-flex h-11 shrink-0 items-center px-3 text-xs uppercase tracking-[0.12em] ${
+    active
+      ? 'bg-stone-900 text-stone-50'
+      : 'border border-stone-200 text-muted hover:border-stone-900 hover:text-stone-900'
+  }`
 
 export default function AdminDashboard({
   products,
@@ -38,149 +55,225 @@ export default function AdminDashboard({
   products: AdminProduct[]
   orders: AdminOrder[]
 }) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [pane, setPane] = useState<AdminPane>(() => asPane(searchParams.get('pane')))
+  const [bucket, setBucket] = useState<OrderBucket>('work')
+  const [query, setQuery] = useState('')
+  const [section, setSection] = useState<SectionFilter>('all')
+  const [statusById, setStatusById] = useState<Record<string, OrderStatus>>({})
+  const [hiddenOfferIds, setHiddenOfferIds] = useState<string[]>([])
+  const [extraOrders, setExtraOrders] = useState<AdminOrder[]>([])
+  const [newOrderOpen, setNewOrderOpen] = useState(false)
+  const deferredQuery = useDeferredValue(query)
+  const deferredSection = useDeferredValue(section)
+  const hidden = useMemo(() => new Set(hiddenOfferIds), [hiddenOfferIds])
+
+  useEffect(() => {
+    setPane(asPane(searchParams.get('pane')))
+  }, [searchParams])
+
+  const resolvedOrders = useMemo(() => {
+    const seen = new Set(orders.map((order) => order.id))
+    const created = extraOrders.filter((order) => !seen.has(order.id))
+    return [...created, ...orders]
+      .map((order) => ({ ...order, status: statusById[order.id] ?? order.status }))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  }, [orders, extraOrders, statusById])
+
+  const newOrderCount = resolvedOrders.filter((order) => order.status === 'new').length
+
+  const workOrders = resolvedOrders.filter((order) => isWorkStatus(order.status))
+  const archiveOrders = resolvedOrders.filter((order) => isArchiveStatus(order.status))
+  const visibleOrders = bucket === 'work' ? workOrders : archiveOrders
+
+  const rows = useMemo(() => {
+    const needle = normalizeSearch(deferredQuery)
+    return products.flatMap((product) =>
+      product.offers
+        .filter((offer) => !hidden.has(offer.id))
+        .filter((offer) => (deferredSection === 'all' ? true : offer.section === deferredSection))
+        .filter((offer) => {
+          if (!needle) return true
+          const haystack = normalizeSearch(`${product.brand} ${product.name}`)
+          return haystack.includes(needle)
+        })
+        .map((offer) => ({ product, offer }))
+    )
+  }, [products, deferredQuery, deferredSection, hidden])
+
+  const catalog = useMemo(
+    () =>
+      products.flatMap((product) =>
+        product.offers
+          .filter((offer) => !hidden.has(offer.id))
+          .map((offer) => ({
+            offerId: offer.id,
+            brand: product.brand,
+            name: product.name,
+            section: offer.section,
+            pricePerMlTenge: offer.pricePerMlTenge,
+          }))
+      ),
+    [products, hidden]
+  )
+
+  const selectPane = useCallback(
+    (next: AdminPane) => {
+      setPane(next)
+      if (typeof window === 'undefined') return
+      const params = new URLSearchParams(window.location.search)
+      if (next === 'orders') params.delete('pane')
+      else params.set('pane', 'vitrina')
+      const qs = params.toString()
+      window.history.replaceState(window.history.state, '', qs ? `${pathname}?${qs}` : pathname)
+    },
+    [pathname]
+  )
+
+  const onStatus = useCallback((orderId: string, status: OrderStatus) => {
+    setStatusById((current) => ({ ...current, [orderId]: status }))
+  }, [])
+
+  const onDeleted = useCallback((offerId: string) => {
+    setHiddenOfferIds((current) => (current.includes(offerId) ? current : [...current, offerId]))
+  }, [])
+
+  const onCreated = useCallback((order: AdminOrder) => {
+    setExtraOrders((current) => [order, ...current])
+    setBucket('work')
+  }, [])
+
+  const closeNewOrder = useCallback(() => {
+    setNewOrderOpen(false)
+  }, [])
+
   return (
-    <main className="flex-1 pt-28 pb-20 px-4 sm:px-6">
-      <div className="max-w-6xl mx-auto space-y-12">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-light text-stone-900">{AppStrings.admin.title}</h1>
-          <form action={signOutAdmin}>
-            <button type="submit" className="text-xs tracking-[0.18em] uppercase text-stone-500">
-              {AppStrings.admin.logout}
-            </button>
-          </form>
+    <main className="flex-1 pb-8 pt-6 px-4 sm:px-6">
+      <div className="mx-auto max-w-2xl space-y-4">
+        <div role="tablist" aria-label="Раздел админки" className="flex flex-wrap gap-1">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pane === 'orders'}
+            onClick={() => selectPane('orders')}
+            className={tabClass(pane === 'orders')}
+          >
+            {AppStrings.admin.orders}
+            {newOrderCount > 0 ? <span className="ml-1 tabular-nums">({newOrderCount})</span> : null}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pane === 'vitrina'}
+            onClick={() => selectPane('vitrina')}
+            className={tabClass(pane === 'vitrina')}
+          >
+            {AppStrings.admin.products}
+          </button>
         </div>
 
-        <section className="space-y-4">
-          <h2 className="text-sm tracking-[0.2em] uppercase text-stone-400">{AppStrings.admin.products}</h2>
-          <div className="overflow-x-auto border border-stone-200">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-stone-50 text-left text-[11px] tracking-[0.14em] uppercase text-stone-500">
-                <tr>
-                  <th className="px-3 py-3">Товар</th>
-                  <th className="px-3 py-3">Раздел</th>
-                  <th className="px-3 py-3">{AppStrings.admin.pricePerMl}</th>
-                  <th className="px-3 py-3">{AppStrings.admin.inStock}</th>
-                  <th className="px-3 py-3">Оффер</th>
-                  <th className="px-3 py-3">Витрина</th>
-                  <th className="px-3 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {products.flatMap((product) =>
-                  product.offers.map((offer) => (
-                    <tr key={offer.id} className="border-t border-stone-100">
-                      <td className="px-3 py-3">
-                        <p className="text-stone-900">{product.brand}</p>
-                        <p className="text-stone-500 font-light">{product.name}</p>
-                      </td>
-                      <td className="px-3 py-3">{offer.section === 'raspiv' ? 'Распив' : 'Разлив'}</td>
-                      <td className="px-3 py-3" colSpan={5}>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <form action={updateOffer} className="flex flex-wrap items-center gap-3">
-                            <input type="hidden" name="offerId" value={offer.id} />
-                            <input
-                              name="pricePerMlTenge"
-                              type="number"
-                              min={1}
-                              defaultValue={offer.pricePerMlTenge}
-                              className="w-24 h-9 px-2 border border-stone-200"
-                            />
-                            <label className="flex items-center gap-2 text-xs text-stone-600">
-                              <input
-                                type="checkbox"
-                                name="isInStock"
-                                defaultChecked={offer.isInStock}
-                              />
-                              {AppStrings.admin.inStock}
-                            </label>
-                            <label className="flex items-center gap-2 text-xs text-stone-600">
-                              <input
-                                type="checkbox"
-                                name="isActive"
-                                defaultChecked={offer.isActive}
-                              />
-                              Оффер
-                            </label>
-                            <button type="submit" className="h-9 px-3 border border-stone-900 text-[10px] tracking-[0.14em] uppercase">
-                              Сохранить
-                            </button>
-                          </form>
-                          <form action={updateProductVisibility} className="flex items-center gap-2">
-                            <input type="hidden" name="productId" value={product.id} />
-                            <label className="flex items-center gap-2 text-xs text-stone-600">
-                              <input
-                                type="checkbox"
-                                name="isActive"
-                                defaultChecked={product.isActive}
-                              />
-                              {product.isActive ? 'На витрине' : AppStrings.admin.hidden}
-                            </label>
-                            <button type="submit" className="h-9 px-3 border border-stone-200 text-[10px] tracking-[0.14em] uppercase">
-                              Витрина
-                            </button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        {pane === 'orders' ? (
+          <section className="space-y-4">
+            <Button fullWidth onClick={() => setNewOrderOpen(true)}>
+              {AppStrings.admin.newOrder}
+            </Button>
+            <div role="tablist" aria-label="Очередь заказов" className="flex flex-wrap gap-1">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={bucket === 'work'}
+                onClick={() => setBucket('work')}
+                className={tabClass(bucket === 'work')}
+              >
+                {AppStrings.admin.work}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={bucket === 'archive'}
+                onClick={() => setBucket('archive')}
+                className={tabClass(bucket === 'archive')}
+              >
+                {AppStrings.admin.archive}
+              </button>
+            </div>
 
-        <section className="space-y-4">
-          <h2 className="text-sm tracking-[0.2em] uppercase text-stone-400">{AppStrings.admin.orders}</h2>
-          <div className="space-y-3">
-            {orders.length === 0 ? (
-              <p className="text-sm text-stone-400 font-light">Заказов пока нет</p>
+            {visibleOrders.length === 0 ? (
+              <p className="text-sm text-muted">
+                {bucket === 'work' ? AppStrings.admin.emptyOrders : AppStrings.admin.emptyArchive}
+              </p>
             ) : (
-              orders.map((order) => (
-                <article key={order.id} className="border border-stone-200 p-4 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                    <div>
-                      <p className="text-sm text-stone-900">{order.orderNumber}</p>
-                      <p className="text-sm text-stone-500 font-light">
-                        {order.customerName} · {order.phoneE164}
-                      </p>
-                    </div>
-                    <p className="text-sm">{formatTenge(order.totalTenge)}</p>
-                  </div>
-                  <ul className="text-sm text-stone-600 font-light space-y-1">
-                    {order.items.map((item) => (
-                      <li key={`${item.offerId}-${item.volumeMl}`}>
-                        {item.brand} {item.name}, {item.volumeMl} мл × {item.quantity} — {formatTenge(item.lineTotalTenge)}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-xs text-stone-400">
-                      {AppStrings.admin.telegramSent}: {order.telegramSent ? 'да' : 'нет'}
-                    </span>
-                    <form action={updateOrderStatus} className="flex items-center gap-2">
-                      <input type="hidden" name="orderId" value={order.id} />
-                      <select
-                        name="status"
-                        defaultValue={order.status}
-                        className="h-9 px-2 border border-stone-200 text-sm"
-                      >
-                        {STATUSES.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
-                      <button type="submit" className="h-9 px-3 border border-stone-900 text-[10px] tracking-[0.14em] uppercase">
-                        {AppStrings.admin.status}
-                      </button>
-                    </form>
-                  </div>
-                </article>
-              ))
+              <div className="space-y-3">
+                {visibleOrders.map((order) => (
+                  <AdminOrderCard key={order.id} order={order} onStatus={onStatus} />
+                ))}
+              </div>
             )}
-          </div>
-        </section>
+          </section>
+        ) : (
+          <section className="space-y-4">
+            <label className="relative block">
+              <span className="sr-only">{AppStrings.admin.search}</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.currentTarget.value)}
+                placeholder={AppStrings.admin.search}
+                autoComplete="off"
+                className="h-11 w-full border border-stone-200 bg-background pl-10 pr-3 text-sm text-stone-900 placeholder:text-muted"
+              />
+            </label>
+            <div role="tablist" aria-label={AppStrings.catalog.filters} className="flex flex-wrap gap-1">
+              {FORMAT_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={section === tab.id}
+                  onClick={() => setSection(tab.id)}
+                  className={tabClass(section === tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {rows.length === 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted">{AppStrings.admin.emptyProducts}</p>
+                {query ? (
+                  <button
+                    type="button"
+                    onClick={() => setQuery('')}
+                    className="h-11 text-sm text-stone-900 underline"
+                  >
+                    {AppStrings.admin.searchReset}
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {rows.map(({ product, offer }) => (
+                  <AdminOfferRow
+                    key={offer.id}
+                    productId={product.id}
+                    brand={product.brand}
+                    name={product.name}
+                    imageUrl={product.imageUrl}
+                    offer={offer}
+                    onDeleted={onDeleted}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </div>
+      {newOrderOpen ? (
+        <AdminNewOrderSheet catalog={catalog} onClose={closeNewOrder} onCreated={onCreated} />
+      ) : null}
     </main>
   )
 }

@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   buildWhatsAppText,
   buildWhatsAppUrl,
+  calculateAdminOrder,
   calculateOrder,
   createOrderNumber,
   normalizePhone,
@@ -131,6 +132,18 @@ test('calculateOrder rejects hidden and out-of-stock offers', () => {
   )
   assert.equal(out.ok, false)
   if (!out.ok) assert.equal(out.error.code, 'offer_out_of_stock')
+})
+
+test('admin order can snapshot an out-of-stock offer', () => {
+  const result = calculateAdminOrder(
+    [{ offerId: offer.id, volumeMl: 5, quantity: 1 }],
+    [{ ...offer, isInStock: false, isActive: false, productIsActive: false }]
+  )
+  assert.equal(result.ok, true)
+  if (result.ok) {
+    assert.equal(result.value.totalTenge, 4000)
+    assert.equal(result.value.items[0]?.name, 'Aventus')
+  }
 })
 
 test('WhatsApp text includes order number, volumes and server total', () => {

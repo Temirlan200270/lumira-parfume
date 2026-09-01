@@ -55,7 +55,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={openCart}
-            className="relative flex h-11 w-11 items-center justify-center text-stone-900"
+            className="relative hidden h-11 w-11 items-center justify-center text-stone-900 lg:flex"
             aria-label={AppStrings.cart.open}
           >
             <ShoppingBag className="h-4 w-4" />

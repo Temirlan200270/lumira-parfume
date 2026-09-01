@@ -12,7 +12,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Политика конфиденциальности | Lumira',
-  description: 'Как Lumira Parfume обрабатывает имя и телефон при заказе.',
+  description: 'Как Lumira Parfumes обрабатывает имя и телефон при заказе.',
 }
 
 export default function PrivacyPage() {
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
         <LegalSection title="1. Оператор">
           <p>
             Оператор персональных данных — {LEGAL_OPERATOR_NAME}, {LEGAL_OPERATOR_IDN}. Витрина
-            работает под названием Lumira Parfume.
+            работает под названием Lumira Parfumes.
           </p>
           <p>
             Адрес: {AppStrings.footer.city}, {AppStrings.footer.address}. Время работы:{' '}

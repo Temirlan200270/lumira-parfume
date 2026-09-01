@@ -186,6 +186,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [items]
   )
 
+  const openCart = useCallback(() => setIsOpen(true), [])
+  const closeCart = useCallback(() => setIsOpen(false), [])
+  const newRequestId = useCallback(() => {
+    const id = crypto.randomUUID()
+    setClientRequestId(id)
+    return id
+  }, [])
+
   const value = useMemo<CartContextValue>(
     () => ({
       items,
@@ -193,18 +201,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clientRequestId,
       itemCount,
       previewTotal,
-      openCart: () => setIsOpen(true),
-      closeCart: () => setIsOpen(false),
+      openCart,
+      closeCart,
       addItem,
       setQuantity,
       setVolume,
       removeItem,
       clearCart,
-      newRequestId: () => {
-        const id = crypto.randomUUID()
-        setClientRequestId(id)
-        return id
-      },
+      newRequestId,
     }),
     [
       items,
@@ -212,11 +216,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clientRequestId,
       itemCount,
       previewTotal,
+      openCart,
+      closeCart,
       addItem,
       setQuantity,
       setVolume,
       removeItem,
       clearCart,
+      newRequestId,
     ]
   )
 
